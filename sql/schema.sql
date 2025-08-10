@@ -1,0 +1,34 @@
+-- sql/schema.sql
+
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL,
+    telegram_chat_id BIGINT UNIQUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE short_urls (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    short_path TEXT NOT NULL UNIQUE,
+    original_url TEXT NOT NULL,
+    user_id INTEGER NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE url_clicks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    short_url_id INTEGER NOT NULL,
+    clicked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    country_code TEXT,
+    user_agent TEXT, -- Consider minimizing storage, e.g., only record browser and OS
+    FOREIGN KEY (short_url_id) REFERENCES short_urls(id) ON DELETE CASCADE
+);
+
+CREATE TABLE telegram_auth_tokens (
+    token TEXT PRIMARY KEY,
+    telegram_chat_id BIGINT NOT NULL,
+    expires_at TIMESTAMP NOT NULL
+);
