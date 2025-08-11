@@ -35,7 +35,7 @@ type User struct {
 	ID             int64         `json:"id"`
 	Username       string        `json:"username"`
 	PasswordHash   string        `json:"password_hash"`
-	Role           string        `json:"role"`
+	Permissions    int64         `json:"permissions"`
 	TelegramChatID sql.NullInt64 `json:"telegram_chat_id"`
 	CreatedAt      time.Time     `json:"created_at"`
 }

@@ -47,7 +47,7 @@ internal/
   domain/
     shorturl.go
     user.go
-    role.go
+    permission.go
     click.go
   application/
     url_usecase.go
@@ -123,7 +123,7 @@ type User struct {
     ID             int64
     Username       string
     PasswordHash   string
-    Role           string
+    Permissions    int
     TelegramID     int64
     CreatedAt      time.Time
 }
@@ -132,22 +132,57 @@ type UserRepository interface {
     GetByUsername(ctx context.Context, username string) (*User, error)
     GetByID(ctx context.Context, id int64) (*User, error)
     UpdateTelegramID(ctx context.Context, tgid int64) error
-    UpdateRole(ctx context.Context, id int64, role string) error
+    UpdatePermissions(ctx context.Context, id int64, permissions int) error
 }
 ```
 
-### internal/domain/role.go
+### internal/domain/permission.go
 
 ```go
+package domain
+
+// Permission is a bitmask type for user permissions.
+// Creating random URLs is a baseline action available to guests and all authenticated users,
+// and thus is not governed by a specific permission bit.
+type Permission int
+
 const (
-    RoleGuest      = "guest"
-    RoleGeneral    = "general"
-    RolePrivileged = "privileged"
-    RoleAdmin      = "admin"
+	PermCreatePrefix Permission = 1 << iota // 1
+	PermCreateAny    Permission             // 2
+	PermDeleteOwn    Permission             // 4
+	PermDeleteAny    Permission             // 8
+	PermViewOwnStats Permission             // 16
+	PermViewAnyStats Permission             // 32
+	PermUserManage   Permission             // 64
 )
-func CanCreateCustomPath(role string) bool
-func CanDeleteAnyURL(role string) bool
-func CanUpdateUserRole(operatorRole string) bool
+
+// Permission sets (pre-configured permission bundles)
+const (
+	RoleGuest      Permission = 0
+	RoleRegular    Permission = PermCreatePrefix | PermDeleteOwn | PermViewOwnStats
+	RolePrivileged Permission = RoleRegular | PermCreateAny
+	RoleEditor     Permission = RolePrivileged | PermDeleteAny | PermViewAnyStats
+	RoleAdmin      Permission = RoleEditor | PermUserManage
+)
+
+// Has checks if the user's permissions (p) include the required permission (required).
+func (p Permission) Has(required Permission) bool {
+	// If required is 0, it's an invalid permission to check.
+	if required == 0 {
+		return false
+	}
+	return (p & required) == required
+}
+
+// Add grants a new permission.
+func (p Permission) Add(perm Permission) Permission {
+	return p | perm
+}
+
+// Remove revokes a permission.
+func (p Permission) Remove(perm Permission) Permission {
+	return p &^ perm
+}
 ```
 
 ### internal/domain/click.go

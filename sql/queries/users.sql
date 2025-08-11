@@ -1,16 +1,16 @@
 -- sql/queries/users.sql
 
 -- name: CreateUser :one
-INSERT INTO users (username, password_hash, role, telegram_chat_id)
+INSERT INTO users (username, password_hash, permissions, telegram_chat_id)
 VALUES (?, ?, ?, ?)
-RETURNING id, username, role, created_at;
+RETURNING id, username, permissions, created_at;
 
 -- name: GetUserByUsername :one
-SELECT id, username, password_hash, role, telegram_chat_id, created_at FROM users
+SELECT id, username, password_hash, permissions, telegram_chat_id, created_at FROM users
 WHERE username = ? LIMIT 1;
 
 -- name: GetUserByID :one
-SELECT id, username, password_hash, role, telegram_chat_id, created_at FROM users
+SELECT id, username, password_hash, permissions, telegram_chat_id, created_at FROM users
 WHERE id = ? LIMIT 1;
 
 -- name: UpdateUserTelegramID :exec
@@ -20,5 +20,5 @@ WHERE id = ?;
 
 -- name: UpdateUserRole :exec
 UPDATE users
-SET role = ?
+SET permissions = ?
 WHERE id = ?;

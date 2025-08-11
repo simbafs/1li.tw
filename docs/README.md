@@ -77,16 +77,41 @@
 - **短網址重定向:** 系統最核心的功能。當使用者存取一個 `/{short_path}` 時，系統應以 HTTP 302 或 301 狀態碼將使用者重定向到原始的完整網址。
 - **點擊事件紀錄:** 在執行重定向的同時，系統應以非同步方式紀錄該次點擊的詳細資訊，以避免影響重定向的效能。
 
-### 3.2. 使用者角色與權限 (User Roles & Permissions)
+### 3.2. 權限系統 (Permission System)
 
-系統定義了以下幾種使用者角色，每種角色擁有不同的權限。
+本系統採用一個基於位元遮罩（bitmask）的權限系統，類似於 Unix 的檔案權限。每個使用者的權限由一個整數表示，該整數是其擁有的所有權限常數的總和。這種設計提供了高度的靈活性和細粒度的存取控制。
 
-| 角色 (Role)                          | 權限 (Permissions)                                                                                                                                                |
-| :----------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **訪客 (Guest)**                     | - 建立隨機的短網址 (歸屬於 `anonymous` 帳號)<br>- 重定向任何短網址                                                                                                |
-| **一般使用者 (General User)**        | - 註冊與登入<br>- 建立隨機短網址<br>- 建立自訂使用者名稱前綴的短網址 (格式: `@username/path`)<br>- 刪除自己建立的短網址<br>- 查看自己建立的短網址列表與其點擊統計 |
-| **特殊權限使用者 (Privileged User)** | - 擁有「一般使用者」所有權限<br>- 建立任意路徑的自訂短網址 (例如 `/special-event`)，只要路徑未被佔用                                                              |
-| **管理者 (Administrator)**           | - 擁有「特殊權限使用者」所有權限<br>- 查看系統中所有使用者建立的短網址與其點擊統計<br>- 刪除系統中任何一個短網址<br>- 管理使用者帳號與權限 (TBD)                  |
+- **訪客 (Guest):** 權限值為 `0`。訪客是未登入的使用者。
+- **基本功能 (Baseline Functionality):** 建立**隨機路徑**的短網址是所有使用者（包括訪客）都擁有的基本功能，因此它**不**由特定的權限位元控制。權限系統僅管理需要授權的特殊操作。
+
+#### 權限位元 (Permission Bits)
+
+以下是系統中定義的權限位元。每個權限代表一個特定的操作能力。
+
+| 權限常數 (Constant) | 位元值 (Value) | 描述                                                     |
+| :------------------ | :------------- | :------------------------------------------------------- |
+| `PermCreatePrefix`  | `1 << 0` (1)   | 建立使用者名稱前綴的自訂短網址 (例如 `@username/path`)。 |
+| `PermCreateAny`     | `1 << 1` (2)   | 建立任意路徑的自訂短網址 (例如 `/special-event`)。       |
+| `PermDeleteOwn`     | `1 << 2` (4)   | 刪除自己的短網址                                         |
+| `PermDeleteAny`     | `1 << 3` (8)   | 刪除系統中任何短網址。                                   |
+| `PermViewOwnStats`  | `1 << 4` (16)  | 查看自己建立的短網址的統計數據。                         |
+| `PermViewAnyStats`  | `1 << 5` (32)  | 查看系統中任何短網址的統計數據。                         |
+| `PermUserManage`    | `1 << 6` (64)  | 管理使用者帳號（新增、修改權限、刪除）。                 |
+
+有些權限是所有使用者共有的，就不列舉在權限系統，裡如「建立隨機路徑的短網址」
+
+#### 權限組合 (Permission Sets)
+
+| 名稱             | 敘述                                           | 權限組合                                                |
+| :--------------- | :--------------------------------------------- | :------------------------------------------------------ |
+| `RoleGuest`      | 未登入的使用者                                 | `0`                                                     |
+| `RoleRegular`    | 一般使用者                                     | `PermCreatePrefix \| PermDeleteOwn \| PermViewOwnStats` |
+| `RolePrivileged` | 特權使用者，可以建立任意不帶前綴路徑的短網址   | `RoleRegular \| PermCreateAny`                          |
+| `RoleEditor`     | 版主，擁有除了 `PermUserManage` 之外的所有權限 | `RolePrivileged \| PermDeleteAny \| PermViewAnyStats`   |
+| `RoleAdmin`      | 管理員 ，擁有所有權限                          | `RoleEditor \| PermUserManage`                          |
+
+要檢查使用者是否擁有特定權限，只需使用位元運算 `AND`：
+`if (user.Permissions & PermURLDeleteAny) != 0 { ... }`
 
 ### 3.3. 短網址管理 (URL Management)
 
@@ -172,14 +197,14 @@
 
 儲存使用者基本資訊。
 
-| 欄位 (Column)      | 類型 (Type) | 限制 (Constraints)                 | 描述                                                   |
-| :----------------- | :---------- | :--------------------------------- | :----------------------------------------------------- |
-| `id`               | INTEGER     | PRIMARY KEY AUTOINCREMENT          | 使用者 ID                                              |
-| `username`         | TEXT        | NOT NULL UNIQUE                    | 使用者名稱                                             |
-| `password_hash`    | TEXT        | NOT NULL                           | 使用 `bcrypt` 演算法加密後的密碼                       |
-| `role`             | TEXT        | NOT NULL                           | 使用者角色 ('guest', 'general', 'privileged', 'admin') |
-| `telegram_chat_id` | BIGINT      | UNIQUE                             | 綁定的 Telegram Chat ID，允許為 NULL                   |
-| `created_at`       | TIMESTAMP   | NOT NULL DEFAULT CURRENT_TIMESTAMP | 建立時間                                               |
+| 欄位 (Column)      | 類型 (Type) | 限制 (Constraints)                 | 描述                                 |
+| :----------------- | :---------- | :--------------------------------- | :----------------------------------- |
+| `id`               | INTEGER     | PRIMARY KEY AUTOINCREMENT          | 使用者 ID                            |
+| `username`         | TEXT        | NOT NULL UNIQUE                    | 使用者名稱                           |
+| `password_hash`    | TEXT        | NOT NULL                           | 使用 `bcrypt` 演算法加密後的密碼     |
+| `permissions`      | INTEGER     | NOT NULL DEFAULT 0                 | 使用者的權限位元遮罩 (bitmask)       |
+| `telegram_chat_id` | BIGINT      | UNIQUE                             | 綁定的 Telegram Chat ID，允許為 NULL |
+| `created_at`       | TIMESTAMP   | NOT NULL DEFAULT CURRENT_TIMESTAMP | 建立時間                             |
 
 **備註:** 系統初始化時，應建立一個特殊的使用者帳號，例如 `username` 為 `anonymous`，`role` 為 `guest`。此帳號的 `password_hash` 應設為一個無效值（例如 `*` 或 `NULL`），使其無法登入。所有由未登入的訪客建立的短網址都將關聯到此帳號的 `id`。
 
