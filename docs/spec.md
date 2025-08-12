@@ -389,16 +389,15 @@ cmd/
   server/main.go
 config/
   config.go
-internal/
-  domain/
-    shorturl.go
-    user.go
-    permission.go
-    click.go
-  application/
-    url_usecase.go
-    user_usecase.go
-    analytics_usecase.go
+domain/
+  shorturl.go
+  user.go
+  permission.go
+  click.go
+application/
+  url_usecase.go
+  user_usecase.go
+  analytics_usecase.go
 infrastructure/
   repository/
     shorturl_repository.go
@@ -442,7 +441,7 @@ type Config struct {
 func LoadConfig() (*Config, error)
 ```
 
-#### internal/domain/shorturl.go
+#### domain/shorturl.go
 
 ```go
 type ShortURL struct {
@@ -460,7 +459,7 @@ type ShortURLRepository interface {
 }
 ```
 
-#### internal/domain/user.go
+#### domain/user.go
 
 ```go
 type User struct {
@@ -480,7 +479,7 @@ type UserRepository interface {
 }
 ```
 
-#### internal/domain/permission.go
+#### domain/permission.go
 
 ```go
 package domain
@@ -529,7 +528,7 @@ func (p Permission) Remove(perm Permission) Permission {
 }
 ```
 
-#### internal/domain/click.go
+#### domain/click.go
 
 ```go
 type URLClick struct {
@@ -552,7 +551,7 @@ type ClickRepository interface {
 }
 ```
 
-#### internal/application/url_usecase.go
+#### application/url_usecase.go
 
 ```go
 type URLUseCase struct {
@@ -569,7 +568,7 @@ func (uc *URLUseCase) GetStats(ctx context.Context, shortPath string) (*URLStats
 func (uc *URLUseCase) RecordClickAsync(ctx context.Context, short *ShortURL, meta ClickMeta) error
 ```
 
-#### internal/application/user_usecase.go
+#### application/user_usecase.go
 
 ```go
 type UserUseCase struct {
@@ -582,7 +581,7 @@ func (uc *UserUseCase) LinkTelegram(ctx context.Context, userID int64, chatID in
 func (uc *UserUseCase) UpdateUserRole(ctx context.Context, operator User, targetUserID int64, newRole string) error
 ```
 
-#### internal/application/analytics_usecase.go
+#### application/analytics_usecase.go
 
 ```go
 type AnalyticsUseCase struct {
