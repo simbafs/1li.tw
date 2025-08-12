@@ -1,20 +1,12 @@
-# 短網址系統規格
+# 短網址系統完整規格書 (Consolidated)
+
+---
 
 ## 1. 總覽 (Overview)
 
 本文件旨在定義一個個人化、功能豐富的短網址系統。此系統將使用 Go 語言搭配 Gin 框架進行後端開發，前端則採用 Astro 框架，並以 SQLite 作為後端資料庫，透過 sqlc 工具進行類型安全的資料庫操作。
 
 使用者可以透過 Web 介面或 Telegram Bot 與系統互動，進行短網址的新增與刪除。系統將包含一個基於角色的存取控制（RBAC）機制，以管理不同使用者的操作權限。
-
-### 1.1. 技術棧 (Technology Stack)
-
-- **後端語言 (Backend Language):** Go
-- **Web 框架 (Web Framework):** Gin
-- **前端框架 (Frontend Framework):** Astro
-- **UI 框架 (UI Framework):** Tailwind CSS + daisyUI
-- **資料庫 (Database):** SQLite
-- **資料庫介面 (Database Interface):** sqlc
-- **部署環境 (Deployment):** 尚未指定，可為獨立伺服器或雲端服務
 
 ## 2. 系統架構 (System Architecture)
 
@@ -189,7 +181,121 @@
     - `/stats <short_path>`: (需綁定) 查詢指定短網址的簡易統計資訊（例如：總點擊次數）。
     - `/whoami`: (需綁定) 顯示目前綁定的帳號資訊。
 
-## 4. 資料庫結構 (Database Schema)
+---
+
+## 4. API 與 Telegram 指令一覽
+
+> 備註：本系統採 JWT（建議以 **HttpOnly Cookie** 保存）進行身分驗證；**管理者** 表示需具備 `admin` 角色。
+
+### 4.1. API Endpoints 總表
+
+#### 路由設計備註：處理多段路徑
+
+為了同時支援 `/{short_path}`（例如 `/randomslug`）和帶有使用者前綴的 `/@{username}/{custom_path}`（例如 `/@user/path`）這兩種格式，Gin 的路由需要特別設計。因為標準的 `/:param` 只會匹配單個路徑段（不含 `/`），我們需要定義兩個獨立的路由來處理這種情況，並確保註冊順序正確：
+
+1.  **`GET /@:username/:custom_path`**: 這個更具體的路由會被優先匹配。它專門用來捕獲帶有 `@` 前綴和兩段路徑的短網址。處理器需要將 `username` 和 `custom_path` 重新組合成完整的 `short_path` (`@username/custom_path`) 來進行資料庫查詢。
+2.  **`GET /:short_path`**: 這個較通用的路由會捕獲所有其他的單段路徑。
+
+這種方法比使用通配符 (`*`) 路由更清晰且安全。
+
+---
+
+| 方法   | 路徑                      | 簡介                                                               | 是否須驗證             | 輸入（請求） / 輸出（回應）                                                                                                                                                               | 對應的 Telegram 操作                                 |
+| ------ | ------------------------- | ------------------------------------------------------------------ | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| GET    | `/:short_path` <br> `/@:username/:custom_path` | 依短碼重定向至原始網址，並**非同步**紀錄點擊資訊（時間、國家、UA） | 否                     | **輸入**：Path 參數。<br>**輸出**：`301/302` Redirect 至 `original_url`。                                                                                                    | 無（使用者直接點連結）                               |
+| POST   | `/api/auth/register`      | 使用者註冊                                                         | 否                     | **輸入**：JSON `{ "username": string, "password": string }`。<br>**輸出**：`201`，JSON `{ "id": number, "username": string }`                                                             | 無                                                   |
+| POST   | `/api/auth/login`         | 使用者登入並簽發 JWT                                               | 否                     | **輸入**：JSON `{ "username": string, "password": string }`。<br>**輸出**：`200`，Set-Cookie: JWT（HttpOnly）；JSON `{ "username": string, "permissions": int }`                          | 無                                                   |
+| GET    | `/auth/telegram`          | Telegram 授權頁（透過 `token` 完成帳號綁定流程的視覺化頁面）       | 否（但頁面動作需登入） | **輸入**：Query `token`（一次性、限時）。<br>**輸出**：HTML 頁面（導向登入／確認綁定）。                                                                                                  | `/auth` 會提供此頁的 URL                             |
+| POST   | `/api/auth/telegram/link` | 確認並完成 Telegram 帳號綁定                                       | 是（Web 已登入）       | **輸入**：JSON `{ "token": string }`（並需 CSRF 保護）。<br>**輸出**：`200`，JSON `{ "ok": true }`                                                                                        | `/auth` 綁定流程的最終步驟                           |
+| GET    | `/api/urls`               | 取得自己建立的短網址列表                                           | 是                     | **輸入**：無。<br>**輸出**：`200`，JSON `[{ "id": number, "short_path": string, "original_url": string, "total_clicks": number, "created_at": ISO8601 }]`                                 | `/list`（透過 Use Case）                             |
+| POST   | `/api/urls`               | 新增短網址（隨機或自訂，依角色規則）                               | 是                     | **輸入**：JSON `{ "original_url": string, "custom_path": string(optional) }`。<br>**輸出**：`201`，JSON `{ "id": number, "short_path": string, "original_url": string }`                  | `/new <original_url> [custom_path]`（透過 Use Case） |
+| DELETE | `/api/urls/:id`           | 刪除自己建立的短網址                                               | 是                     | **輸入**：Path 參數 `id`。<br>**輸出**：`204` 無內容                                                                                                                                      | `/delete`（透過 Use Case）                           |
+| GET    | `/api/urls/:id/stats`     | 取得指定短網址的統計（時間、國家、系統、瀏覽器）                   | 是                     | **輸入**：Path 參數 `id`；可選 Query：`from`、`to`、`bucket`。<br>**輸出**：`200`，JSON `{ "total": number, "by_time": [...], "by_country": [...], "by_os": [...], "by_browser": [...] }` | `/stats`（透過 Use Case）                            |
+| GET    | `/api/admin/urls`         | 取得全系統短網址列表（管理功能）                                   | 管理者                 | **輸入**：可選 Query：分頁／搜尋。<br>**輸出**：`200`，JSON `[{ "id": number, "owner": string, "short_path": string, "original_url": string, "total_clicks": number }]`                   | 無                                                   |
+| DELETE | `/api/admin/urls/:id`     | 刪除任一短網址（管理功能）                                         | 管理者                 | **輸入**：Path 參數 `id`。<br>**輸出**：`204` 無內容                                                                                                                                      | 無                                                   |
+
+### 4.2. Telegram 命令
+
+| 指令                                | 需求   | 說明                                                            | 交互流程（與 Use Case 的關聯）                                                                                            |
+| ----------------------------------- | ------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `/start`                            | 無     | 顯示歡迎訊息與可用指令                                          | 僅 Bot 回覆說明，無直接與後端互動                                                                                         |
+| `/auth`                             | 無     | 產生一次性 `token` 並回傳授權 URL（使用者點開在瀏覽器完成綁定） | 生成並回覆 `https://<host>/auth/telegram?token=...`；之後使用者登入後，由頁面觸發 `POST /api/auth/telegram/link` 完成綁定 |
+| `/whoami`                           | 已綁定 | 顯示綁定之系統帳號與角色                                        | Bot 端呼叫 `UserUseCase` 的方法 (如 `GetMe`)                                                                              |
+| `/new <original_url> [custom_path]` | 已綁定 | 建立短網址（支援隨機或自訂）                                    | Bot 伺服器端以使用者身份呼叫 `URLUseCase` 的方法 (如 `CreateShortURL`)                                                    |
+| `/delete <short_path>`              | 已綁定 | 刪除自己建立的短網址                                            | Bot 先查 `short_path -> id`，成功後呼叫 `URLUseCase` 的方法 (如 `DeleteShortURL`)                                         |
+| `/list`                             | 已綁定 | 列出自己建立的短網址清單                                        | 呼叫 `URLUseCase` 的方法 (如 `ListByUser`)，以文字清單回傳                                                                |
+| `/stats <short_path>`               | 已綁定 | 顯示短網址的總點擊與概況                                        | Bot 先查 `short_path -> id`，再呼叫 `AnalyticsUseCase` 的方法，整理關鍵數字回覆                                           |
+
+### 4.3. 流程圖 (Mermaid)
+
+#### 短網址重定向與點擊紀錄
+
+```mermaid
+flowchart LR
+    A[使用者請求 /:short_path] --> B{查詢短碼}
+    B -- 找到 --> C[取得 original_url]
+    C --> D[擷取 Client IP / User-Agent / Now]
+    D --> E[送入 Click Queue (非同步)]
+    E -->|背景寫入| F[(url_clicks)]
+    C --> G[回應 301/302 Redirect 至 original_url]
+    B -- 找不到 --> H[回應 404]
+```
+
+#### Telegram 綁定授權
+
+```mermaid
+sequenceDiagram
+    participant U as User (Telegram)
+    participant B as Telegram Bot
+    participant W as Web Browser
+    participant S as Server (API)
+    U->>B: /auth
+    B->>S: 產生一次性 token（含 TG chat_id）
+    S-->>B: token 與授權 URL
+    B-->>U: 回傳 https://<host>/auth/telegram?token=...
+    U->>W: 點擊連結於瀏覽器開啟
+    W->>S: GET /auth/telegram?token=...
+    alt 未登入
+        S-->>W: 轉導至登入頁
+        U->>W: 完成登入（簽發 JWT/HttpOnly Cookie）
+    end
+    W->>S: POST /api/auth/telegram/link (token + CSRF)
+    S->>S: 驗證 token、綁定帳號與 chat_id
+    S-->>W: 200 OK（綁定成功）
+    W-->>U: 顯示完成訊息
+```
+
+### 4.4. 回應格式範例
+
+> 以下為常見回應的簡短示意，實際欄位可依 `sqlc` 與前端需求微調。
+
+```jsonc
+// GET /api/urls
+[
+	{
+		"id": 12,
+		"short_path": "abc123",
+		"original_url": "https://example.com/page",
+		"total_clicks": 42,
+		"created_at": "2025-08-10T02:30:00Z",
+	},
+]
+```
+
+```jsonc
+// GET /api/urls/:id/stats
+{
+	"total": 42,
+	"by_time": [{ "bucketStart": "2025-08-09T00:00:00Z", "count": 10 }],
+	"by_country": [{ "key": "TW", "count": 30 }],
+	"by_os": [{ "key": "Android", "count": 18 }],
+	"by_browser": [{ "key": "Chrome", "count": 20 }],
+}
+```
+
+---
+
+## 5. 資料庫結構 (Database Schema)
 
 以下是初步的資料庫表結構設計。
 
@@ -224,13 +330,15 @@
 
 儲存每一次的點擊紀錄，用於統計分析。
 
-| 欄位 (Column)  | 類型 (Type) | 限制 (Constraints)                 | 描述                                                             |
-| :------------- | :---------- | :--------------------------------- | :--------------------------------------------------------------- |
-| `id`           | INTEGER     | PRIMARY KEY AUTOINCREMENT          | 點擊事件 ID                                                      |
-| `short_url_id` | INTEGER     | NOT NULL                           | 對應的短網址 ID (Foreign Key to `short_urls.id`)                 |
-| `clicked_at`   | TIMESTAMP   | NOT NULL DEFAULT CURRENT_TIMESTAMP | 點擊時間                                                         |
-| `country_code` | TEXT        |                                    | 點擊來源國家的 ISO 3166-1 alpha-2 代碼                           |
-| `user_agent`   | TEXT        |                                    | 點擊者的 User-Agent (考慮最小化儲存，例如只記錄瀏覽器和作業系統) |
+| 欄位 (Column)   | 類型 (Type) | 限制 (Constraints)                 | 描述                                                             |
+| :-------------- | :---------- | :--------------------------------- | :--------------------------------------------------------------- |
+| `id`            | INTEGER     | PRIMARY KEY AUTOINCREMENT          | 點擊事件 ID                                                      |
+| `short_url_id`  | INTEGER     | NOT NULL                           | 對應的短網址 ID (Foreign Key to `short_urls.id`)                 |
+| `clicked_at`    | TIMESTAMP   | NOT NULL DEFAULT CURRENT_TIMESTAMP | 點擊時間                                                         |
+| `country_code`  | TEXT        |                                    | 點擊來源國家的 ISO 3166-1 alpha-2 代碼                           |
+| `os_name`       | TEXT        |                                    | 作業系統名稱                                                     |
+| `browser_name`  | TEXT        |                                    | 瀏覽器名稱                                                       |
+| `raw_user_agent`| TEXT        |                                    | 原始的 User-Agent 字串（可選，用於備份或偵錯）                   |
 
 ### `telegram_auth_tokens`
 
@@ -242,23 +350,255 @@
 | `telegram_chat_id` | BIGINT      | NOT NULL           | 發起授權的 Telegram Chat ID |
 | `expires_at`       | TIMESTAMP   | NOT NULL           | Token 的過期時間            |
 
-## 5. API 端點 (API Endpoints)
+---
 
-以下是 Web 介面與授權流程可能需要的 RESTful API 端點。所有寫入型操作的端點都應實施速率限制 (Rate Limiting)。
+## 6. 程式碼與專案結構
 
-- `GET /:short_path`: 重定向到 `original_url`，並非同步觸發點擊紀錄。
-- `POST /api/auth/register`: 註冊新使用者。
-- `POST /api/auth/login`: 使用者登入，回傳 JWT (應儲存在 HttpOnly Cookie 中)。
-- `GET /auth/telegram`: (Web 頁面) 處理 Telegram 授權流程的頁面。
-- `POST /api/auth/telegram/link`: (需 Web 登入驗證) 確認並完成 Telegram 帳號的綁定 (需 CSRF 保護)。
-- `GET /api/urls`: (需驗證) 取得已登入使用者的短網址列表。
-- `POST /api/urls`: (需驗證) 建立新的短網址。
-- `DELETE /api/urls/:id`: (需驗證) 刪除指定的短網址。
-- `GET /api/urls/:id/stats`: (需驗證) 取得指定短網址的詳細統計數據。
-- `GET /api/admin/urls`: (需管理者權限) 取得所有短網址列表。
-- `DELETE /api/admin/urls/:id`: (需管理者權限) 刪除任何指定的短網址。
+### 6.1. 技術棧
 
-## 6. 開發與部署 (Development & Deployment)
+#### 後端（Go）
+
+- `github.com/gin-gonic/gin`
+- `github.com/golang-jwt/jwt/v5`
+- `golang.org/x/crypto/bcrypt`
+- `github.com/mattn/go-sqlite3`
+- `github.com/kyleconroy/sqlc`
+- `github.com/joho/godotenv`（可選）
+- `github.com/golang-migrate/migrate/v4`（可選）
+- `github.com/go-playground/validator/v10`
+- `github.com/gin-contrib/cors`
+- `github.com/didip/tollbooth/v6`
+- `github.com/go-telegram-bot-api/telegram-bot-api/v5`
+- **GeoIP**：`github.com/oschwald/geoip2-golang`
+- **User-Agent 解析**（二擇一）：
+    - `github.com/mssola/user_agent`
+    - `github.com/ua-parser/uap-go/uaparser`
+- **佇列/工作池（可選）**：`github.com/alitto/pond`
+
+#### 前端（Astro）
+
+- `astro`
+- `tailwindcss`
+- `daisyui`
+- `chart.js`
+
+### 6.2. 資料夾與檔案規劃
+
+```
+cmd/
+  server/main.go
+config/
+  config.go
+internal/
+  domain/
+    shorturl.go
+    user.go
+    permission.go
+    click.go
+  application/
+    url_usecase.go
+    user_usecase.go
+    analytics_usecase.go
+infrastructure/
+  repository/
+    shorturl_repository.go
+    user_repository.go
+    click_repository.go
+  geo/geoip_service.go
+  ua/ua_parser.go
+  worker/click_worker.go
+  telegram/bot_handler.go
+  web/http_handler.go
+  web/middleware.go
+presentation/
+  gin/router.go
+  gin/handlers.go
+  gin/admin_handlers.go
+  telegram/commands.go
+sqlc/
+  queries/
+    users.sql
+    short_urls.sql
+    url_clicks.sql
+    telegram_auth_tokens.sql
+  generated.go
+web/   # Astro 專案
+  src/
+  dist/
+```
+
+### 6.3. 主要檔案內容規劃
+
+#### config/config.go
+
+```go
+type Config struct {
+    DBPath       string
+    BotToken     string
+    JWTSecret    string
+    ServerPort   string
+    Environment  string
+}
+func LoadConfig() (*Config, error)
+```
+
+#### internal/domain/shorturl.go
+
+```go
+type ShortURL struct {
+    ID          int64
+    ShortPath   string
+    OriginalURL string
+    UserID      int64
+    CreatedAt   time.Time
+}
+type ShortURLRepository interface {
+    Create(ctx context.Context, shortURL ShortURL) (int64, error)
+    GetByPath(ctx context.Context, path string) (*ShortURL, error)
+    Delete(ctx context.Context, id int64) error
+    ListByUser(ctx context.Context, userID int64) ([]ShortURL, error)
+}
+```
+
+#### internal/domain/user.go
+
+```go
+type User struct {
+    ID             int64
+    Username       string
+    PasswordHash   string
+    Permissions    int
+    TelegramID     int64
+    CreatedAt      time.Time
+}
+type UserRepository interface {
+    Create(ctx context.Context, user User) (int64, error)
+    GetByUsername(ctx context.Context, username string) (*User, error)
+    GetByID(ctx context.Context, id int64) (*User, error)
+    UpdateTelegramID(ctx context.Context, tgid int64) error
+    UpdatePermissions(ctx context.Context, id int64, permissions int) error
+}
+```
+
+#### internal/domain/permission.go
+
+```go
+package domain
+
+// Permission is a bitmask type for user permissions.
+// Creating random URLs is a baseline action available to guests and all authenticated users,
+// and thus is not governed by a specific permission bit.
+type Permission int
+
+const (
+	PermCreatePrefix Permission = 1 << iota // 1
+	PermCreateAny    Permission             // 2
+	PermDeleteOwn    Permission             // 4
+	PermDeleteAny    Permission             // 8
+	PermViewOwnStats Permission             // 16
+	PermViewAnyStats Permission             // 32
+	PermUserManage   Permission             // 64
+)
+
+// Permission sets (pre-configured permission bundles)
+const (
+	RoleGuest      Permission = 0
+	RoleRegular    Permission = PermCreatePrefix | PermDeleteOwn | PermViewOwnStats
+	RolePrivileged Permission = RoleRegular | PermCreateAny
+	RoleEditor     Permission = RolePrivileged | PermDeleteAny | PermViewAnyStats
+	RoleAdmin      Permission = RoleEditor | PermUserManage
+)
+
+// Has checks if the user's permissions (p) include the required permission (required).
+func (p Permission) Has(required Permission) bool {
+	// If required is 0, it's an invalid permission to check.
+	if required == 0 {
+		return false
+	}
+	return (p & required) == required
+}
+
+// Add grants a new permission.
+func (p Permission) Add(perm Permission) Permission {
+	return p | perm
+}
+
+// Remove revokes a permission.
+func (p Permission) Remove(perm Permission) Permission {
+	return p &^ perm
+}
+```
+
+#### internal/domain/click.go
+
+```go
+type URLClick struct {
+    ID          int64
+    ShortURLID  int64
+    ClickedAt   time.Time
+    CountryCode *string
+    OSName      *string
+    BrowserName *string
+    DeviceType  *string
+    UserAgent   *string
+}
+type ClickRepository interface {
+    Insert(ctx context.Context, c URLClick) (int64, error)
+    CountByShortURL(ctx context.Context, shortURLID int64) (int64, error)
+    AggregateByTimeRange(ctx context.Context, shortURLID int64, from, to time.Time, bucket string) ([]TimeBucketCount, error)
+    AggregateByCountry(ctx context.Context, shortURLID int64, from, to time.Time) ([]KeyCount, error)
+    AggregateByOS(ctx context.Context, shortURLID int64, from, to time.Time) ([]KeyCount, error)
+    AggregateByBrowser(ctx context.Context, shortURLID int64, from, to time.Time) ([]KeyCount, error)
+}
+```
+
+#### internal/application/url_usecase.go
+
+```go
+type URLUseCase struct {
+    repo      ShortURLRepository
+    clickRepo ClickRepository
+    geo       GeoService
+    ua        UAService
+    clickSink ClickSink
+}
+func (uc *URLUseCase) CreateShortURL(ctx context.Context, user User, originalURL, customPath string) (*ShortURL, error)
+func (uc *URLUseCase) DeleteShortURL(ctx context.Context, user User, shortPath string) error
+func (uc *URLUseCase) ListByUser(ctx context.Context, user User) ([]ShortURL, error)
+func (uc *URLUseCase) GetStats(ctx context.Context, shortPath string) (*URLStats, error)
+func (uc *URLUseCase) RecordClickAsync(ctx context.Context, short *ShortURL, meta ClickMeta) error
+```
+
+#### internal/application/user_usecase.go
+
+```go
+type UserUseCase struct {
+    repo UserRepository
+}
+func (uc *UserUseCase) Register(ctx context.Context, username, password string) (*User, error)
+func (uc *UserUseCase) Login(ctx context.Context, username, password string) (string, error)
+func (uc *UserUseCase) GetMe(ctx context.Context, userID int64) (*User, error)
+func (uc *UserUseCase) LinkTelegram(ctx context.Context, userID int64, chatID int64) error
+func (uc *UserUseCase) UpdateUserRole(ctx context.Context, operator User, targetUserID int64, newRole string) error
+```
+
+#### internal/application/analytics_usecase.go
+
+```go
+type AnalyticsUseCase struct {
+    clickRepo ClickRepository
+    urlRepo   ShortURLRepository
+}
+func (a *AnalyticsUseCase) GetOverview(ctx context.Context, shortPath string, from, to time.Time) (*URLStats, error)
+func (a *AnalyticsUseCase) GetTimeSeries(ctx context.Context, shortPath string, from, to time.Time, bucket string) ([]TimeBucketCount, error)
+func (a *AnalyticsUseCase) GetByCountry(ctx context.Context, shortPath string, from, to time.Time) ([]KeyCount, error)
+func (a *AnalyticsUseCase) GetByOS(ctx context.Context, shortPath string, from, to time.Time) ([]KeyCount, error)
+func (a *AnalyticsUseCase) GetByBrowser(ctx context.Context, shortPath string, from, to time.Time) ([]KeyCount, error)
+```
+
+---
+
+## 7. 開發與部署 (Development & Deployment)
 
 - **相依性管理:** 使用 Go Modules (`go.mod`)。
 - **前端建置:** Astro 前端專案位於 `web/` 目錄。執行 `npm run build` 後，會將靜態資源輸出到 `web/dist/`。
@@ -270,11 +610,13 @@
     - **強制 HTTPS:** 生產環境必須強制使用 HTTPS，並啟用 HSTS (Strict-Transport-Security) 標頭。
     - **資料庫檔案位置:** SQLite 資料庫檔案 (`.db`) 必須存放在 Web 根目錄之外，防止被公開下載。
 
-## 7. 安全考量 (Security Considerations)
+---
+
+## 8. 安全考量 (Security Considerations)
 
 在系統的設計與實作過程中，必須優先考慮以下安全問題，以建立一個穩固且可信賴的服務。
 
-### 7.1. 輸入驗證與濫用防護
+### 8.1. 輸入驗證與濫用防護
 
 - **防止開放重定向 (Open Redirect):**
 
@@ -290,7 +632,7 @@
     - **威脅:** 特殊權限使用者建立的自訂路徑可能與系統的 API 路由（如 `/api/`, `/auth/`）發生衝突，導致功能異常或被劫持。
     - **對策:** 應建立一個系統保留路徑的**黑名單**。所有符合 `/api/*`, `/auth/*` 等模式的路徑都應被禁止註冊為自訂短網址。
 
-### 7.2. 身份驗證與會話管理
+### 8.2. 身份驗證與會話管理
 
 - **密碼安全:**
 
@@ -311,7 +653,7 @@
         1.  **一次性 Token:** `telegram_auth_tokens` 表中的 Token 在被使用一次後（無論成功或失敗）必須立即失效。
         2.  **CSRF 保護:** 所有在 Web 端會改變狀態的 `POST` 請求（特別是 `POST /api/auth/telegram/link`）都必須受到 CSRF Token 的保護。
 
-### 7.3. 資料庫與基礎設施安全
+### 8.3. 資料庫與基礎設施安全
 
 - **SQLite 資料庫檔案保護:**
 
@@ -325,7 +667,7 @@
         2.  考慮對 `user_agent` 進行最小化處理，例如只儲存解析後的瀏覽器和作業系統名稱。
         3.  用於 IP 地理位置分析的服務必須是可信的，且不應將使用者 IP 傳送給不安全的第三方。
 
-### 7.4. 通訊與應用程式安全
+### 8.4. 通訊與應用程式安全
 
 - **強制 HTTPS:**
 
