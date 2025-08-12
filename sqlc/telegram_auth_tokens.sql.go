@@ -10,10 +10,15 @@ import (
 	"time"
 )
 
-const createTelegramAuthToken = `-- name: CreateTelegramAuthToken :exec
-
-INSERT INTO telegram_auth_tokens (token, telegram_chat_id, expires_at)
-VALUES (?, ?, ?)
+const createTelegramAuthToken = `-- name: CreateTelegramAuthToken :one
+INSERT INTO telegram_auth_tokens (
+    token,
+    telegram_chat_id,
+    expires_at
+) VALUES (
+    ?, ?, ?
+)
+RETURNING token
 `
 
 type CreateTelegramAuthTokenParams struct {
@@ -22,10 +27,11 @@ type CreateTelegramAuthTokenParams struct {
 	ExpiresAt      time.Time `json:"expires_at"`
 }
 
-// sql/queries/telegram_auth_tokens.sql
-func (q *Queries) CreateTelegramAuthToken(ctx context.Context, arg CreateTelegramAuthTokenParams) error {
-	_, err := q.db.ExecContext(ctx, createTelegramAuthToken, arg.Token, arg.TelegramChatID, arg.ExpiresAt)
-	return err
+func (q *Queries) CreateTelegramAuthToken(ctx context.Context, arg CreateTelegramAuthTokenParams) (string, error) {
+	row := q.db.QueryRowContext(ctx, createTelegramAuthToken, arg.Token, arg.TelegramChatID, arg.ExpiresAt)
+	var token string
+	err := row.Scan(&token)
+	return token, err
 }
 
 const deleteTelegramAuthToken = `-- name: DeleteTelegramAuthToken :exec
@@ -40,7 +46,7 @@ func (q *Queries) DeleteTelegramAuthToken(ctx context.Context, token string) err
 
 const getTelegramAuthToken = `-- name: GetTelegramAuthToken :one
 SELECT token, telegram_chat_id, expires_at FROM telegram_auth_tokens
-WHERE token = ? AND expires_at > CURRENT_TIMESTAMP LIMIT 1
+WHERE token = ?
 `
 
 func (q *Queries) GetTelegramAuthToken(ctx context.Context, token string) (TelegramAuthToken, error) {

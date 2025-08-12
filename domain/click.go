@@ -12,7 +12,6 @@ type URLClick struct {
 	CountryCode *string
 	OSName      *string
 	BrowserName *string
-	DeviceType  *string
 	UserAgent   *string
 }
 
@@ -22,8 +21,8 @@ type TimeBucketCount struct {
 }
 
 type KeyCount struct {
-	Key   string
-	Count int64
+	AggKey string
+	Count  int64
 }
 
 type ClickRepository interface {

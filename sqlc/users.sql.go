@@ -8,51 +8,35 @@ package sqlc
 import (
 	"context"
 	"database/sql"
-	"time"
 )
 
 const createUser = `-- name: CreateUser :one
-
-INSERT INTO users (username, password_hash, permissions, telegram_chat_id)
-VALUES (?, ?, ?, ?)
-RETURNING id, username, permissions, created_at
+INSERT INTO users (
+    username,
+    password_hash,
+    permissions
+) VALUES (
+    ?, ?, ?
+)
+RETURNING id
 `
 
 type CreateUserParams struct {
-	Username       string        `json:"username"`
-	PasswordHash   string        `json:"password_hash"`
-	Permissions    int64         `json:"permissions"`
-	TelegramChatID sql.NullInt64 `json:"telegram_chat_id"`
+	Username     string `json:"username"`
+	PasswordHash string `json:"password_hash"`
+	Permissions  int64  `json:"permissions"`
 }
 
-type CreateUserRow struct {
-	ID          int64     `json:"id"`
-	Username    string    `json:"username"`
-	Permissions int64     `json:"permissions"`
-	CreatedAt   time.Time `json:"created_at"`
-}
-
-// sql/queries/users.sql
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
-	row := q.db.QueryRowContext(ctx, createUser,
-		arg.Username,
-		arg.PasswordHash,
-		arg.Permissions,
-		arg.TelegramChatID,
-	)
-	var i CreateUserRow
-	err := row.Scan(
-		&i.ID,
-		&i.Username,
-		&i.Permissions,
-		&i.CreatedAt,
-	)
-	return i, err
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createUser, arg.Username, arg.PasswordHash, arg.Permissions)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
 SELECT id, username, password_hash, permissions, telegram_chat_id, created_at FROM users
-WHERE id = ? LIMIT 1
+WHERE id = ?
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
@@ -71,7 +55,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 
 const getUserByUsername = `-- name: GetUserByUsername :one
 SELECT id, username, password_hash, permissions, telegram_chat_id, created_at FROM users
-WHERE username = ? LIMIT 1
+WHERE username = ?
 `
 
 func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User, error) {
@@ -88,19 +72,19 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 	return i, err
 }
 
-const updateUserRole = `-- name: UpdateUserRole :exec
+const updateUserPermissions = `-- name: UpdateUserPermissions :exec
 UPDATE users
 SET permissions = ?
 WHERE id = ?
 `
 
-type UpdateUserRoleParams struct {
+type UpdateUserPermissionsParams struct {
 	Permissions int64 `json:"permissions"`
 	ID          int64 `json:"id"`
 }
 
-func (q *Queries) UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error {
-	_, err := q.db.ExecContext(ctx, updateUserRole, arg.Permissions, arg.ID)
+func (q *Queries) UpdateUserPermissions(ctx context.Context, arg UpdateUserPermissionsParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserPermissions, arg.Permissions, arg.ID)
 	return err
 }
 

@@ -12,24 +12,19 @@ import (
 
 const aggregateClicksByBrowser = `-- name: AggregateClicksByBrowser :many
 SELECT
-  CASE
-    WHEN user_agent LIKE '%Chrome%' AND user_agent NOT LIKE '%Chromium%' THEN 'Chrome'
-    WHEN user_agent LIKE '%Firefox%' THEN 'Firefox'
-    WHEN user_agent LIKE '%Safari%' AND user_agent NOT LIKE '%Chrome%' THEN 'Safari'
-    WHEN user_agent LIKE '%Edge%' THEN 'Edge'
-    WHEN user_agent LIKE '%Opera%' THEN 'Opera'
-    ELSE 'Other'
-  END AS browser_name,
-  COUNT(*) AS count
+    browser_name as agg_key,
+    COUNT(*) as count
 FROM url_clicks
-WHERE short_url_id = ? AND user_agent IS NOT NULL AND clicked_at BETWEEN ? AND ?
+WHERE
+    short_url_id = ?
+AND clicked_at BETWEEN ? AND ?
 GROUP BY browser_name
 ORDER BY count DESC
 `
 
 type AggregateClicksByBrowserRow struct {
-	BrowserName string `json:"browser_name"`
-	Count       int64  `json:"count"`
+	AggKey sql.NullString `json:"agg_key"`
+	Count  int64          `json:"count"`
 }
 
 func (q *Queries) AggregateClicksByBrowser(ctx context.Context, shortUrlID int64) ([]AggregateClicksByBrowserRow, error) {
@@ -41,7 +36,7 @@ func (q *Queries) AggregateClicksByBrowser(ctx context.Context, shortUrlID int64
 	items := []AggregateClicksByBrowserRow{}
 	for rows.Next() {
 		var i AggregateClicksByBrowserRow
-		if err := rows.Scan(&i.BrowserName, &i.Count); err != nil {
+		if err := rows.Scan(&i.AggKey, &i.Count); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -56,15 +51,20 @@ func (q *Queries) AggregateClicksByBrowser(ctx context.Context, shortUrlID int64
 }
 
 const aggregateClicksByCountry = `-- name: AggregateClicksByCountry :many
-SELECT country_code AS country_key, COUNT(*) AS count FROM url_clicks
-WHERE short_url_id = ? AND country_code IS NOT NULL AND clicked_at BETWEEN ? AND ?
-GROUP BY country_key
+SELECT
+    country_code as agg_key,
+    COUNT(*) as count
+FROM url_clicks
+WHERE
+    short_url_id = ?
+AND clicked_at BETWEEN ? AND ?
+GROUP BY country_code
 ORDER BY count DESC
 `
 
 type AggregateClicksByCountryRow struct {
-	CountryKey sql.NullString `json:"country_key"`
-	Count      int64          `json:"count"`
+	AggKey sql.NullString `json:"agg_key"`
+	Count  int64          `json:"count"`
 }
 
 func (q *Queries) AggregateClicksByCountry(ctx context.Context, shortUrlID int64) ([]AggregateClicksByCountryRow, error) {
@@ -76,7 +76,7 @@ func (q *Queries) AggregateClicksByCountry(ctx context.Context, shortUrlID int64
 	items := []AggregateClicksByCountryRow{}
 	for rows.Next() {
 		var i AggregateClicksByCountryRow
-		if err := rows.Scan(&i.CountryKey, &i.Count); err != nil {
+		if err := rows.Scan(&i.AggKey, &i.Count); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -92,24 +92,19 @@ func (q *Queries) AggregateClicksByCountry(ctx context.Context, shortUrlID int64
 
 const aggregateClicksByOS = `-- name: AggregateClicksByOS :many
 SELECT
-  CASE
-    WHEN user_agent LIKE '%Android%' THEN 'Android'
-    WHEN user_agent LIKE '%iPhone%' OR user_agent LIKE '%iPad%' THEN 'iOS'
-    WHEN user_agent LIKE '%Windows%' THEN 'Windows'
-    WHEN user_agent LIKE '%Mac OS%' THEN 'macOS'
-    WHEN user_agent LIKE '%Linux%' THEN 'Linux'
-    ELSE 'Other'
-  END AS os_name,
-  COUNT(*) AS count
+    os_name as agg_key,
+    COUNT(*) as count
 FROM url_clicks
-WHERE short_url_id = ? AND user_agent IS NOT NULL AND clicked_at BETWEEN ? AND ?
+WHERE
+    short_url_id = ?
+AND clicked_at BETWEEN ? AND ?
 GROUP BY os_name
 ORDER BY count DESC
 `
 
 type AggregateClicksByOSRow struct {
-	OsName string `json:"os_name"`
-	Count  int64  `json:"count"`
+	AggKey sql.NullString `json:"agg_key"`
+	Count  int64          `json:"count"`
 }
 
 func (q *Queries) AggregateClicksByOS(ctx context.Context, shortUrlID int64) ([]AggregateClicksByOSRow, error) {
@@ -121,7 +116,7 @@ func (q *Queries) AggregateClicksByOS(ctx context.Context, shortUrlID int64) ([]
 	items := []AggregateClicksByOSRow{}
 	for rows.Next() {
 		var i AggregateClicksByOSRow
-		if err := rows.Scan(&i.OsName, &i.Count); err != nil {
+		if err := rows.Scan(&i.AggKey, &i.Count); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -135,30 +130,32 @@ func (q *Queries) AggregateClicksByOS(ctx context.Context, shortUrlID int64) ([]
 	return items, nil
 }
 
-const aggregateClicksByTime = `-- name: AggregateClicksByTime :many
+const aggregateClicksByTimeRange = `-- name: AggregateClicksByTimeRange :many
 SELECT
-  strftime('%Y-%m-%dT%H:00:00Z', clicked_at) AS bucket_start,
-  COUNT(*) AS count
+    strftime('%Y-%m-%dT%H:00:00Z', clicked_at) as bucket_start,
+    COUNT(*) as count
 FROM url_clicks
-WHERE short_url_id = ? AND clicked_at BETWEEN ? AND ?
+WHERE
+    short_url_id = ?
+AND clicked_at BETWEEN ? AND ?
 GROUP BY bucket_start
 ORDER BY bucket_start
 `
 
-type AggregateClicksByTimeRow struct {
+type AggregateClicksByTimeRangeRow struct {
 	BucketStart interface{} `json:"bucket_start"`
 	Count       int64       `json:"count"`
 }
 
-func (q *Queries) AggregateClicksByTime(ctx context.Context, shortUrlID int64) ([]AggregateClicksByTimeRow, error) {
-	rows, err := q.db.QueryContext(ctx, aggregateClicksByTime, shortUrlID)
+func (q *Queries) AggregateClicksByTimeRange(ctx context.Context, shortUrlID int64) ([]AggregateClicksByTimeRangeRow, error) {
+	rows, err := q.db.QueryContext(ctx, aggregateClicksByTimeRange, shortUrlID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []AggregateClicksByTimeRow{}
+	items := []AggregateClicksByTimeRangeRow{}
 	for rows.Next() {
-		var i AggregateClicksByTimeRow
+		var i AggregateClicksByTimeRangeRow
 		if err := rows.Scan(&i.BucketStart, &i.Count); err != nil {
 			return nil, err
 		}
@@ -173,57 +170,47 @@ func (q *Queries) AggregateClicksByTime(ctx context.Context, shortUrlID int64) (
 	return items, nil
 }
 
-const getClicksByShortURLID = `-- name: GetClicksByShortURLID :many
-SELECT id, short_url_id, clicked_at, country_code, user_agent FROM url_clicks
+const countClicksByShortURL = `-- name: CountClicksByShortURL :one
+SELECT COUNT(*) FROM url_clicks
 WHERE short_url_id = ?
-ORDER BY clicked_at DESC
 `
 
-func (q *Queries) GetClicksByShortURLID(ctx context.Context, shortUrlID int64) ([]UrlClick, error) {
-	rows, err := q.db.QueryContext(ctx, getClicksByShortURLID, shortUrlID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []UrlClick{}
-	for rows.Next() {
-		var i UrlClick
-		if err := rows.Scan(
-			&i.ID,
-			&i.ShortUrlID,
-			&i.ClickedAt,
-			&i.CountryCode,
-			&i.UserAgent,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) CountClicksByShortURL(ctx context.Context, shortUrlID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countClicksByShortURL, shortUrlID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const insertClick = `-- name: InsertClick :one
-
-INSERT INTO url_clicks (short_url_id, country_code, user_agent)
-VALUES (?, ?, ?)
+INSERT INTO url_clicks (
+    short_url_id,
+    country_code,
+    os_name,
+    browser_name,
+    raw_user_agent
+) VALUES (
+    ?, ?, ?, ?, ?
+)
 RETURNING id
 `
 
 type InsertClickParams struct {
-	ShortUrlID  int64          `json:"short_url_id"`
-	CountryCode sql.NullString `json:"country_code"`
-	UserAgent   sql.NullString `json:"user_agent"`
+	ShortUrlID   int64          `json:"short_url_id"`
+	CountryCode  sql.NullString `json:"country_code"`
+	OsName       sql.NullString `json:"os_name"`
+	BrowserName  sql.NullString `json:"browser_name"`
+	RawUserAgent sql.NullString `json:"raw_user_agent"`
 }
 
-// sql/queries/url_clicks.sql
 func (q *Queries) InsertClick(ctx context.Context, arg InsertClickParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, insertClick, arg.ShortUrlID, arg.CountryCode, arg.UserAgent)
+	row := q.db.QueryRowContext(ctx, insertClick,
+		arg.ShortUrlID,
+		arg.CountryCode,
+		arg.OsName,
+		arg.BrowserName,
+		arg.RawUserAgent,
+	)
 	var id int64
 	err := row.Scan(&id)
 	return id, err

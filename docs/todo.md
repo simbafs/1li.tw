@@ -8,7 +8,7 @@
 
 - [x] **專案結構初始化**
     - [x] 建立 Go Modules (`go mod init`)
-    - [ ] 根據規格書建立 `cmd`, `config`, `domain`, `application`, `infrastructure`, `presentation` 等資料夾結構
+    - [x] 根據規格書建立 `cmd`, `config`, `domain`, `application`, `infrastructure`, `presentation` 等資料夾結構
 - [x] **Domain (實體層) 定義**
     - [x] `domain/permission.go`: 定義權限位元與角色
     - [x] `domain/user.go`: 定義 `User` 實體與 `UserRepository` 介面

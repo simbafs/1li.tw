@@ -3,7 +3,7 @@ package domain
 // Permission is a bitmask type for user permissions.
 // Creating random URLs is a baseline action available to guests and all authenticated users,
 // and thus is not governed by a specific permission bit.
-type Permission int
+type Permission uint
 
 const (
 	PermCreatePrefix Permission = 1 << iota // 1
@@ -40,5 +40,5 @@ func (p Permission) Add(perm Permission) Permission {
 
 // Remove revokes a permission.
 func (p Permission) Remove(perm Permission) Permission {
-	return p & ^perm
+	return p &^ perm
 }

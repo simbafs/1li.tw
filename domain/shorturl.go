@@ -12,6 +12,7 @@ type ShortURL struct {
 	UserID      int64
 	CreatedAt   time.Time
 }
+
 type ShortURLRepository interface {
 	Create(ctx context.Context, shortURL ShortURL) (int64, error)
 	GetByPath(ctx context.Context, path string) (*ShortURL, error)

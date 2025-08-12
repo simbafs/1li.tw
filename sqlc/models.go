@@ -24,11 +24,13 @@ type TelegramAuthToken struct {
 }
 
 type UrlClick struct {
-	ID          int64          `json:"id"`
-	ShortUrlID  int64          `json:"short_url_id"`
-	ClickedAt   time.Time      `json:"clicked_at"`
-	CountryCode sql.NullString `json:"country_code"`
-	UserAgent   sql.NullString `json:"user_agent"`
+	ID           int64          `json:"id"`
+	ShortUrlID   int64          `json:"short_url_id"`
+	ClickedAt    time.Time      `json:"clicked_at"`
+	CountryCode  sql.NullString `json:"country_code"`
+	OsName       sql.NullString `json:"os_name"`
+	BrowserName  sql.NullString `json:"browser_name"`
+	RawUserAgent sql.NullString `json:"raw_user_agent"`
 }
 
 type User struct {
