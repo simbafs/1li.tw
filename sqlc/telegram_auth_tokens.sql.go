@@ -11,13 +11,8 @@ import (
 )
 
 const createTelegramAuthToken = `-- name: CreateTelegramAuthToken :one
-INSERT INTO telegram_auth_tokens (
-    token,
-    telegram_chat_id,
-    expires_at
-) VALUES (
-    ?, ?, ?
-)
+INSERT INTO telegram_auth_tokens (token, telegram_chat_id, expires_at)
+VALUES (?, ?, ?)
 RETURNING token
 `
 
@@ -45,7 +40,8 @@ func (q *Queries) DeleteTelegramAuthToken(ctx context.Context, token string) err
 }
 
 const getTelegramAuthToken = `-- name: GetTelegramAuthToken :one
-SELECT token, telegram_chat_id, expires_at FROM telegram_auth_tokens
+SELECT token, telegram_chat_id, expires_at
+FROM telegram_auth_tokens
 WHERE token = ?
 `
 

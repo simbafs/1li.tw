@@ -3,7 +3,7 @@ package domain
 // Permission is a bitmask type for user permissions.
 // Creating random URLs is a baseline action available to guests and all authenticated users,
 // and thus is not governed by a specific permission bit.
-type Permission uint
+type Permission int
 
 const (
 	PermCreatePrefix Permission = 1 << iota // 1

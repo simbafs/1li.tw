@@ -1,4 +1,4 @@
--- users: Stores user basic information.
+-- users Table: Stores user information
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
@@ -8,7 +8,7 @@ CREATE TABLE users (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- short_urls: Stores the mapping between short URLs and original URLs.
+-- short_urls Table: Stores the mapping between short paths and original URLs
 CREATE TABLE short_urls (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     short_path TEXT NOT NULL UNIQUE,
@@ -18,7 +18,7 @@ CREATE TABLE short_urls (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- url_clicks: Stores each click record for statistical analysis.
+-- url_clicks Table: Records each click for analytics
 CREATE TABLE url_clicks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     short_url_id INTEGER NOT NULL,
@@ -30,9 +30,12 @@ CREATE TABLE url_clicks (
     FOREIGN KEY (short_url_id) REFERENCES short_urls(id)
 );
 
--- telegram_auth_tokens: Stores temporary tokens for the Telegram binding process.
+-- telegram_auth_tokens Table: Stores temporary tokens for the Telegram account linking process
 CREATE TABLE telegram_auth_tokens (
     token TEXT PRIMARY KEY,
     telegram_chat_id BIGINT NOT NULL,
     expires_at TIMESTAMP NOT NULL
 );
+
+-- Create a special 'anonymous' user for guest-created URLs
+INSERT INTO users (username, password_hash, permissions) VALUES ('anonymous', '*', 0);

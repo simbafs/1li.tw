@@ -12,7 +12,7 @@ import (
 type ShortUrl struct {
 	ID          int64     `json:"id"`
 	ShortPath   string    `json:"short_path"`
-	OriginalUrl string    `json:"original_url"`
+	OriginalURL string    `json:"original_url"`
 	UserID      int64     `json:"user_id"`
 	CreatedAt   time.Time `json:"created_at"`
 }
@@ -25,10 +25,10 @@ type TelegramAuthToken struct {
 
 type UrlClick struct {
 	ID           int64          `json:"id"`
-	ShortUrlID   int64          `json:"short_url_id"`
+	ShortURLID   int64          `json:"short_url_id"`
 	ClickedAt    time.Time      `json:"clicked_at"`
 	CountryCode  sql.NullString `json:"country_code"`
-	OsName       sql.NullString `json:"os_name"`
+	OSName       sql.NullString `json:"os_name"`
 	BrowserName  sql.NullString `json:"browser_name"`
 	RawUserAgent sql.NullString `json:"raw_user_agent"`
 }

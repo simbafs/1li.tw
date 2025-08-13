@@ -8,210 +8,221 @@ package sqlc
 import (
 	"context"
 	"database/sql"
+	"time"
 )
 
-const aggregateClicksByBrowser = `-- name: AggregateClicksByBrowser :many
-SELECT
-    browser_name as agg_key,
-    COUNT(*) as count
+const countClicksByShortURLID = `-- name: CountClicksByShortURLID :one
+SELECT COUNT(*)
 FROM url_clicks
-WHERE
-    short_url_id = ?
-AND clicked_at BETWEEN ? AND ?
-GROUP BY browser_name
-ORDER BY count DESC
-`
-
-type AggregateClicksByBrowserRow struct {
-	AggKey sql.NullString `json:"agg_key"`
-	Count  int64          `json:"count"`
-}
-
-func (q *Queries) AggregateClicksByBrowser(ctx context.Context, shortUrlID int64) ([]AggregateClicksByBrowserRow, error) {
-	rows, err := q.db.QueryContext(ctx, aggregateClicksByBrowser, shortUrlID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []AggregateClicksByBrowserRow{}
-	for rows.Next() {
-		var i AggregateClicksByBrowserRow
-		if err := rows.Scan(&i.AggKey, &i.Count); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const aggregateClicksByCountry = `-- name: AggregateClicksByCountry :many
-SELECT
-    country_code as agg_key,
-    COUNT(*) as count
-FROM url_clicks
-WHERE
-    short_url_id = ?
-AND clicked_at BETWEEN ? AND ?
-GROUP BY country_code
-ORDER BY count DESC
-`
-
-type AggregateClicksByCountryRow struct {
-	AggKey sql.NullString `json:"agg_key"`
-	Count  int64          `json:"count"`
-}
-
-func (q *Queries) AggregateClicksByCountry(ctx context.Context, shortUrlID int64) ([]AggregateClicksByCountryRow, error) {
-	rows, err := q.db.QueryContext(ctx, aggregateClicksByCountry, shortUrlID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []AggregateClicksByCountryRow{}
-	for rows.Next() {
-		var i AggregateClicksByCountryRow
-		if err := rows.Scan(&i.AggKey, &i.Count); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const aggregateClicksByOS = `-- name: AggregateClicksByOS :many
-SELECT
-    os_name as agg_key,
-    COUNT(*) as count
-FROM url_clicks
-WHERE
-    short_url_id = ?
-AND clicked_at BETWEEN ? AND ?
-GROUP BY os_name
-ORDER BY count DESC
-`
-
-type AggregateClicksByOSRow struct {
-	AggKey sql.NullString `json:"agg_key"`
-	Count  int64          `json:"count"`
-}
-
-func (q *Queries) AggregateClicksByOS(ctx context.Context, shortUrlID int64) ([]AggregateClicksByOSRow, error) {
-	rows, err := q.db.QueryContext(ctx, aggregateClicksByOS, shortUrlID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []AggregateClicksByOSRow{}
-	for rows.Next() {
-		var i AggregateClicksByOSRow
-		if err := rows.Scan(&i.AggKey, &i.Count); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const aggregateClicksByTimeRange = `-- name: AggregateClicksByTimeRange :many
-SELECT
-    strftime('%Y-%m-%dT%H:00:00Z', clicked_at) as bucket_start,
-    COUNT(*) as count
-FROM url_clicks
-WHERE
-    short_url_id = ?
-AND clicked_at BETWEEN ? AND ?
-GROUP BY bucket_start
-ORDER BY bucket_start
-`
-
-type AggregateClicksByTimeRangeRow struct {
-	BucketStart interface{} `json:"bucket_start"`
-	Count       int64       `json:"count"`
-}
-
-func (q *Queries) AggregateClicksByTimeRange(ctx context.Context, shortUrlID int64) ([]AggregateClicksByTimeRangeRow, error) {
-	rows, err := q.db.QueryContext(ctx, aggregateClicksByTimeRange, shortUrlID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []AggregateClicksByTimeRangeRow{}
-	for rows.Next() {
-		var i AggregateClicksByTimeRangeRow
-		if err := rows.Scan(&i.BucketStart, &i.Count); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const countClicksByShortURL = `-- name: CountClicksByShortURL :one
-SELECT COUNT(*) FROM url_clicks
 WHERE short_url_id = ?
 `
 
-func (q *Queries) CountClicksByShortURL(ctx context.Context, shortUrlID int64) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countClicksByShortURL, shortUrlID)
+func (q *Queries) CountClicksByShortURLID(ctx context.Context, shortUrlID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countClicksByShortURLID, shortUrlID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
 }
 
-const insertClick = `-- name: InsertClick :one
-INSERT INTO url_clicks (
-    short_url_id,
-    country_code,
-    os_name,
-    browser_name,
-    raw_user_agent
-) VALUES (
-    ?, ?, ?, ?, ?
-)
+const createURLClick = `-- name: CreateURLClick :one
+INSERT INTO url_clicks (short_url_id, country_code, os_name, browser_name, raw_user_agent)
+VALUES (?, ?, ?, ?, ?)
 RETURNING id
 `
 
-type InsertClickParams struct {
-	ShortUrlID   int64          `json:"short_url_id"`
+type CreateURLClickParams struct {
+	ShortURLID   int64          `json:"short_url_id"`
 	CountryCode  sql.NullString `json:"country_code"`
-	OsName       sql.NullString `json:"os_name"`
+	OSName       sql.NullString `json:"os_name"`
 	BrowserName  sql.NullString `json:"browser_name"`
 	RawUserAgent sql.NullString `json:"raw_user_agent"`
 }
 
-func (q *Queries) InsertClick(ctx context.Context, arg InsertClickParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, insertClick,
-		arg.ShortUrlID,
+func (q *Queries) CreateURLClick(ctx context.Context, arg CreateURLClickParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createURLClick,
+		arg.ShortURLID,
 		arg.CountryCode,
-		arg.OsName,
+		arg.OSName,
 		arg.BrowserName,
 		arg.RawUserAgent,
 	)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
+}
+
+const getClickStatsByBrowser = `-- name: GetClickStatsByBrowser :many
+SELECT
+    browser_name,
+    COUNT(*) as count
+FROM url_clicks
+WHERE short_url_id = ? AND clicked_at >= ?2 AND clicked_at <= ?3
+GROUP BY browser_name
+ORDER BY count DESC
+`
+
+type GetClickStatsByBrowserParams struct {
+	ShortURLID int64     `json:"short_url_id"`
+	From       time.Time `json:"from"`
+	To         time.Time `json:"to"`
+}
+
+type GetClickStatsByBrowserRow struct {
+	BrowserName sql.NullString `json:"browser_name"`
+	Count       int64          `json:"count"`
+}
+
+func (q *Queries) GetClickStatsByBrowser(ctx context.Context, arg GetClickStatsByBrowserParams) ([]GetClickStatsByBrowserRow, error) {
+	rows, err := q.db.QueryContext(ctx, getClickStatsByBrowser, arg.ShortURLID, arg.From, arg.To)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetClickStatsByBrowserRow{}
+	for rows.Next() {
+		var i GetClickStatsByBrowserRow
+		if err := rows.Scan(&i.BrowserName, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getClickStatsByCountry = `-- name: GetClickStatsByCountry :many
+SELECT
+    country_code,
+    COUNT(*) as count
+FROM url_clicks
+WHERE short_url_id = ? AND clicked_at >= ?2 AND clicked_at <= ?3
+GROUP BY country_code
+ORDER BY count DESC
+`
+
+type GetClickStatsByCountryParams struct {
+	ShortURLID int64     `json:"short_url_id"`
+	From       time.Time `json:"from"`
+	To         time.Time `json:"to"`
+}
+
+type GetClickStatsByCountryRow struct {
+	CountryCode sql.NullString `json:"country_code"`
+	Count       int64          `json:"count"`
+}
+
+func (q *Queries) GetClickStatsByCountry(ctx context.Context, arg GetClickStatsByCountryParams) ([]GetClickStatsByCountryRow, error) {
+	rows, err := q.db.QueryContext(ctx, getClickStatsByCountry, arg.ShortURLID, arg.From, arg.To)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetClickStatsByCountryRow{}
+	for rows.Next() {
+		var i GetClickStatsByCountryRow
+		if err := rows.Scan(&i.CountryCode, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getClickStatsByOS = `-- name: GetClickStatsByOS :many
+SELECT
+    os_name,
+    COUNT(*) as count
+FROM url_clicks
+WHERE short_url_id = ? AND clicked_at >= ?2 AND clicked_at <= ?3
+GROUP BY os_name
+ORDER BY count DESC
+`
+
+type GetClickStatsByOSParams struct {
+	ShortURLID int64     `json:"short_url_id"`
+	From       time.Time `json:"from"`
+	To         time.Time `json:"to"`
+}
+
+type GetClickStatsByOSRow struct {
+	OSName sql.NullString `json:"os_name"`
+	Count  int64          `json:"count"`
+}
+
+func (q *Queries) GetClickStatsByOS(ctx context.Context, arg GetClickStatsByOSParams) ([]GetClickStatsByOSRow, error) {
+	rows, err := q.db.QueryContext(ctx, getClickStatsByOS, arg.ShortURLID, arg.From, arg.To)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetClickStatsByOSRow{}
+	for rows.Next() {
+		var i GetClickStatsByOSRow
+		if err := rows.Scan(&i.OSName, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getClickStatsByTime = `-- name: GetClickStatsByTime :many
+SELECT
+    strftime('%Y-%m-%dT%H:00:00Z', clicked_at) as time_bucket,
+    COUNT(*) as count
+FROM url_clicks
+WHERE short_url_id = ? AND clicked_at >= ?2 AND clicked_at <= ?3
+GROUP BY time_bucket
+ORDER BY time_bucket
+`
+
+type GetClickStatsByTimeParams struct {
+	ShortURLID int64     `json:"short_url_id"`
+	From       time.Time `json:"from"`
+	To         time.Time `json:"to"`
+}
+
+type GetClickStatsByTimeRow struct {
+	TimeBucket interface{} `json:"time_bucket"`
+	Count      int64       `json:"count"`
+}
+
+func (q *Queries) GetClickStatsByTime(ctx context.Context, arg GetClickStatsByTimeParams) ([]GetClickStatsByTimeRow, error) {
+	rows, err := q.db.QueryContext(ctx, getClickStatsByTime, arg.ShortURLID, arg.From, arg.To)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetClickStatsByTimeRow{}
+	for rows.Next() {
+		var i GetClickStatsByTimeRow
+		if err := rows.Scan(&i.TimeBucket, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

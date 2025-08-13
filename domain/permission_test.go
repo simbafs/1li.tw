@@ -78,28 +78,28 @@ func TestPermission_Has(t *testing.T) {
 
 func TestPermission_Add(t *testing.T) {
 	testCases := []struct {
-		name           string
-		initialPerms   Permission
-		permToAdd      Permission
-		expectedPerms  Permission
+		name          string
+		initialPerms  Permission
+		permToAdd     Permission
+		expectedPerms Permission
 	}{
 		{
-			name:           "Add PermCreateAny to Regular user",
-			initialPerms:   RoleRegular,
-			permToAdd:      PermCreateAny,
-			expectedPerms:  RolePrivileged,
+			name:          "Add PermCreateAny to Regular user",
+			initialPerms:  RoleRegular,
+			permToAdd:     PermCreateAny,
+			expectedPerms: RolePrivileged,
 		},
 		{
-			name:           "Add existing permission does not change anything",
-			initialPerms:   RoleRegular,
-			permToAdd:      PermCreatePrefix,
-			expectedPerms:  RoleRegular,
+			name:          "Add existing permission does not change anything",
+			initialPerms:  RoleRegular,
+			permToAdd:     PermCreatePrefix,
+			expectedPerms: RoleRegular,
 		},
 		{
-			name:           "Add permission to Guest",
-			initialPerms:   RoleGuest,
-			permToAdd:      PermCreatePrefix,
-			expectedPerms:  PermCreatePrefix,
+			name:          "Add permission to Guest",
+			initialPerms:  RoleGuest,
+			permToAdd:     PermCreatePrefix,
+			expectedPerms: PermCreatePrefix,
 		},
 	}
 
@@ -114,28 +114,28 @@ func TestPermission_Add(t *testing.T) {
 
 func TestPermission_Remove(t *testing.T) {
 	testCases := []struct {
-		name           string
-		initialPerms   Permission
-		permToRemove   Permission
-		expectedPerms  Permission
+		name          string
+		initialPerms  Permission
+		permToRemove  Permission
+		expectedPerms Permission
 	}{
 		{
-			name:           "Remove PermCreateAny from Privileged user",
-			initialPerms:   RolePrivileged,
-			permToRemove:   PermCreateAny,
-			expectedPerms:  RoleRegular,
+			name:          "Remove PermCreateAny from Privileged user",
+			initialPerms:  RolePrivileged,
+			permToRemove:  PermCreateAny,
+			expectedPerms: RoleRegular,
 		},
 		{
-			name:           "Remove non-existing permission does not change anything",
-			initialPerms:   RoleRegular,
-			permToRemove:   PermCreateAny,
-			expectedPerms:  RoleRegular,
+			name:          "Remove non-existing permission does not change anything",
+			initialPerms:  RoleRegular,
+			permToRemove:  PermCreateAny,
+			expectedPerms: RoleRegular,
 		},
 		{
-			name:           "Remove permission from Admin",
-			initialPerms:   RoleAdmin,
-			permToRemove:   PermUserManage,
-			expectedPerms:  RoleEditor,
+			name:          "Remove permission from Admin",
+			initialPerms:  RoleAdmin,
+			permToRemove:  PermUserManage,
+			expectedPerms: RoleEditor,
 		},
 	}
 

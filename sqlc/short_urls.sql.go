@@ -7,30 +7,32 @@ package sqlc
 
 import (
 	"context"
+	"time"
 )
 
 const createShortURL = `-- name: CreateShortURL :one
-INSERT INTO short_urls (
-    short_path,
-    original_url,
-    user_id
-) VALUES (
-    ?, ?, ?
-)
-RETURNING id
+INSERT INTO short_urls (short_path, original_url, user_id)
+VALUES (?, ?, ?)
+RETURNING id, short_path, original_url
 `
 
 type CreateShortURLParams struct {
 	ShortPath   string `json:"short_path"`
-	OriginalUrl string `json:"original_url"`
+	OriginalURL string `json:"original_url"`
 	UserID      int64  `json:"user_id"`
 }
 
-func (q *Queries) CreateShortURL(ctx context.Context, arg CreateShortURLParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, createShortURL, arg.ShortPath, arg.OriginalUrl, arg.UserID)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
+type CreateShortURLRow struct {
+	ID          int64  `json:"id"`
+	ShortPath   string `json:"short_path"`
+	OriginalURL string `json:"original_url"`
+}
+
+func (q *Queries) CreateShortURL(ctx context.Context, arg CreateShortURLParams) (CreateShortURLRow, error) {
+	row := q.db.QueryRowContext(ctx, createShortURL, arg.ShortPath, arg.OriginalURL, arg.UserID)
+	var i CreateShortURLRow
+	err := row.Scan(&i.ID, &i.ShortPath, &i.OriginalURL)
+	return i, err
 }
 
 const deleteShortURL = `-- name: DeleteShortURL :exec
@@ -43,45 +45,140 @@ func (q *Queries) DeleteShortURL(ctx context.Context, id int64) error {
 	return err
 }
 
-const getShortURLByPath = `-- name: GetShortURLByPath :one
-SELECT id, short_path, original_url, user_id, created_at FROM short_urls
-WHERE short_path = ?
+const getShortURLByID = `-- name: GetShortURLByID :one
+SELECT id, short_path, original_url, user_id
+FROM short_urls
+WHERE id = ?
 `
 
-func (q *Queries) GetShortURLByPath(ctx context.Context, shortPath string) (ShortUrl, error) {
-	row := q.db.QueryRowContext(ctx, getShortURLByPath, shortPath)
-	var i ShortUrl
+type GetShortURLByIDRow struct {
+	ID          int64  `json:"id"`
+	ShortPath   string `json:"short_path"`
+	OriginalURL string `json:"original_url"`
+	UserID      int64  `json:"user_id"`
+}
+
+func (q *Queries) GetShortURLByID(ctx context.Context, id int64) (GetShortURLByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, getShortURLByID, id)
+	var i GetShortURLByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.ShortPath,
-		&i.OriginalUrl,
+		&i.OriginalURL,
 		&i.UserID,
-		&i.CreatedAt,
 	)
 	return i, err
 }
 
-const listShortURLsByUser = `-- name: ListShortURLsByUser :many
-SELECT id, short_path, original_url, user_id, created_at FROM short_urls
-WHERE user_id = ?
-ORDER BY created_at DESC
+const getShortURLByPath = `-- name: GetShortURLByPath :one
+SELECT id, original_url, user_id
+FROM short_urls
+WHERE short_path = ?
 `
 
-func (q *Queries) ListShortURLsByUser(ctx context.Context, userID int64) ([]ShortUrl, error) {
-	rows, err := q.db.QueryContext(ctx, listShortURLsByUser, userID)
+type GetShortURLByPathRow struct {
+	ID          int64  `json:"id"`
+	OriginalURL string `json:"original_url"`
+	UserID      int64  `json:"user_id"`
+}
+
+func (q *Queries) GetShortURLByPath(ctx context.Context, shortPath string) (GetShortURLByPathRow, error) {
+	row := q.db.QueryRowContext(ctx, getShortURLByPath, shortPath)
+	var i GetShortURLByPathRow
+	err := row.Scan(&i.ID, &i.OriginalURL, &i.UserID)
+	return i, err
+}
+
+const listAllShortURLs = `-- name: ListAllShortURLs :many
+SELECT
+    su.id,
+    su.short_path,
+    su.original_url,
+    su.created_at,
+    su.user_id,
+    u.username as owner_username,
+    (SELECT COUNT(*) FROM url_clicks uc WHERE uc.short_url_id = su.id) AS total_clicks
+FROM short_urls su
+JOIN users u ON su.user_id = u.id
+ORDER BY su.created_at DESC
+`
+
+type ListAllShortURLsRow struct {
+	ID            int64     `json:"id"`
+	ShortPath     string    `json:"short_path"`
+	OriginalURL   string    `json:"original_url"`
+	CreatedAt     time.Time `json:"created_at"`
+	UserID        int64     `json:"user_id"`
+	OwnerUsername string    `json:"owner_username"`
+	TotalClicks   int64     `json:"total_clicks"`
+}
+
+func (q *Queries) ListAllShortURLs(ctx context.Context) ([]ListAllShortURLsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllShortURLs)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ShortUrl{}
+	items := []ListAllShortURLsRow{}
 	for rows.Next() {
-		var i ShortUrl
+		var i ListAllShortURLsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ShortPath,
-			&i.OriginalUrl,
-			&i.UserID,
+			&i.OriginalURL,
 			&i.CreatedAt,
+			&i.UserID,
+			&i.OwnerUsername,
+			&i.TotalClicks,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listShortURLsByUserID = `-- name: ListShortURLsByUserID :many
+SELECT
+    su.id,
+    su.short_path,
+    su.original_url,
+    su.created_at,
+    (SELECT COUNT(*) FROM url_clicks uc WHERE uc.short_url_id = su.id) AS total_clicks
+FROM short_urls su
+WHERE su.user_id = ?
+ORDER BY su.created_at DESC
+`
+
+type ListShortURLsByUserIDRow struct {
+	ID          int64     `json:"id"`
+	ShortPath   string    `json:"short_path"`
+	OriginalURL string    `json:"original_url"`
+	CreatedAt   time.Time `json:"created_at"`
+	TotalClicks int64     `json:"total_clicks"`
+}
+
+func (q *Queries) ListShortURLsByUserID(ctx context.Context, userID int64) ([]ListShortURLsByUserIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, listShortURLsByUserID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListShortURLsByUserIDRow{}
+	for rows.Next() {
+		var i ListShortURLsByUserIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ShortPath,
+			&i.OriginalURL,
+			&i.CreatedAt,
+			&i.TotalClicks,
 		); err != nil {
 			return nil, err
 		}

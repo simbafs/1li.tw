@@ -1,59 +1,45 @@
--- name: InsertClick :one
-INSERT INTO url_clicks (
-    short_url_id,
-    country_code,
-    os_name,
-    browser_name,
-    raw_user_agent
-) VALUES (
-    ?, ?, ?, ?, ?
-)
+-- name: CreateURLClick :one
+INSERT INTO url_clicks (short_url_id, country_code, os_name, browser_name, raw_user_agent)
+VALUES (?, ?, ?, ?, ?)
 RETURNING id;
 
--- name: CountClicksByShortURL :one
-SELECT COUNT(*) FROM url_clicks
+-- name: CountClicksByShortURLID :one
+SELECT COUNT(*)
+FROM url_clicks
 WHERE short_url_id = ?;
 
--- name: AggregateClicksByTimeRange :many
+-- name: GetClickStatsByTime :many
 SELECT
-    strftime('%Y-%m-%dT%H:00:00Z', clicked_at) as bucket_start,
+    strftime('%Y-%m-%dT%H:00:00Z', clicked_at) as time_bucket,
     COUNT(*) as count
 FROM url_clicks
-WHERE
-    short_url_id = ?
-AND clicked_at BETWEEN ? AND ?
-GROUP BY bucket_start
-ORDER BY bucket_start;
+WHERE short_url_id = ? AND clicked_at >= sqlc.arg('from') AND clicked_at <= sqlc.arg('to')
+GROUP BY time_bucket
+ORDER BY time_bucket;
 
--- name: AggregateClicksByCountry :many
+-- name: GetClickStatsByCountry :many
 SELECT
-    country_code as agg_key,
+    country_code,
     COUNT(*) as count
 FROM url_clicks
-WHERE
-    short_url_id = ?
-AND clicked_at BETWEEN ? AND ?
+WHERE short_url_id = ? AND clicked_at >= sqlc.arg('from') AND clicked_at <= sqlc.arg('to')
 GROUP BY country_code
 ORDER BY count DESC;
 
--- name: AggregateClicksByOS :many
+-- name: GetClickStatsByOS :many
 SELECT
-    os_name as agg_key,
+    os_name,
     COUNT(*) as count
 FROM url_clicks
-WHERE
-    short_url_id = ?
-AND clicked_at BETWEEN ? AND ?
+WHERE short_url_id = ? AND clicked_at >= sqlc.arg('from') AND clicked_at <= sqlc.arg('to')
 GROUP BY os_name
 ORDER BY count DESC;
 
--- name: AggregateClicksByBrowser :many
+-- name: GetClickStatsByBrowser :many
 SELECT
-    browser_name as agg_key,
+    browser_name,
     COUNT(*) as count
 FROM url_clicks
-WHERE
-    short_url_id = ?
-AND clicked_at BETWEEN ? AND ?
+WHERE short_url_id = ? AND clicked_at >= sqlc.arg('from') AND clicked_at <= sqlc.arg('to')
 GROUP BY browser_name
 ORDER BY count DESC;

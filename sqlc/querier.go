@@ -6,25 +6,29 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 )
 
 type Querier interface {
-	AggregateClicksByBrowser(ctx context.Context, shortUrlID int64) ([]AggregateClicksByBrowserRow, error)
-	AggregateClicksByCountry(ctx context.Context, shortUrlID int64) ([]AggregateClicksByCountryRow, error)
-	AggregateClicksByOS(ctx context.Context, shortUrlID int64) ([]AggregateClicksByOSRow, error)
-	AggregateClicksByTimeRange(ctx context.Context, shortUrlID int64) ([]AggregateClicksByTimeRangeRow, error)
-	CountClicksByShortURL(ctx context.Context, shortUrlID int64) (int64, error)
-	CreateShortURL(ctx context.Context, arg CreateShortURLParams) (int64, error)
+	CountClicksByShortURLID(ctx context.Context, shortUrlID int64) (int64, error)
+	CreateShortURL(ctx context.Context, arg CreateShortURLParams) (CreateShortURLRow, error)
 	CreateTelegramAuthToken(ctx context.Context, arg CreateTelegramAuthTokenParams) (string, error)
-	CreateUser(ctx context.Context, arg CreateUserParams) (int64, error)
+	CreateURLClick(ctx context.Context, arg CreateURLClickParams) (int64, error)
+	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
 	DeleteShortURL(ctx context.Context, id int64) error
 	DeleteTelegramAuthToken(ctx context.Context, token string) error
-	GetShortURLByPath(ctx context.Context, shortPath string) (ShortUrl, error)
+	GetClickStatsByBrowser(ctx context.Context, arg GetClickStatsByBrowserParams) ([]GetClickStatsByBrowserRow, error)
+	GetClickStatsByCountry(ctx context.Context, arg GetClickStatsByCountryParams) ([]GetClickStatsByCountryRow, error)
+	GetClickStatsByOS(ctx context.Context, arg GetClickStatsByOSParams) ([]GetClickStatsByOSRow, error)
+	GetClickStatsByTime(ctx context.Context, arg GetClickStatsByTimeParams) ([]GetClickStatsByTimeRow, error)
+	GetShortURLByID(ctx context.Context, id int64) (GetShortURLByIDRow, error)
+	GetShortURLByPath(ctx context.Context, shortPath string) (GetShortURLByPathRow, error)
 	GetTelegramAuthToken(ctx context.Context, token string) (TelegramAuthToken, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
+	GetUserByTelegramID(ctx context.Context, telegramChatID sql.NullInt64) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
-	InsertClick(ctx context.Context, arg InsertClickParams) (int64, error)
-	ListShortURLsByUser(ctx context.Context, userID int64) ([]ShortUrl, error)
+	ListAllShortURLs(ctx context.Context) ([]ListAllShortURLsRow, error)
+	ListShortURLsByUserID(ctx context.Context, userID int64) ([]ListShortURLsByUserIDRow, error)
 	UpdateUserPermissions(ctx context.Context, arg UpdateUserPermissionsParams) error
 	UpdateUserTelegramID(ctx context.Context, arg UpdateUserTelegramIDParams) error
 }

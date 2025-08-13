@@ -13,3 +13,19 @@ sql:
         emit_interface: true
         emit_exact_table_names: false
         emit_empty_slices: true
+        rename:
+          original_url: "OriginalURL"
+          password_hash: "PasswordHash"
+          telegram_chat_id: "TelegramChatID"
+          user_id: "UserID"
+          short_url_id: "ShortURLID"
+          created_at: "CreatedAt"
+          expires_at: "ExpiresAt"
+          clicked_at: "ClickedAt"
+          short_path: "ShortPath"
+          custom_path: "CustomPath"
+          country_code: "CountryCode"
+          os_name: "OSName"
+          browser_name: "BrowserName"
+          raw_user_agent: "RawUserAgent"
+          role: "Role"

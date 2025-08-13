@@ -11,14 +11,9 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (
-    username,
-    password_hash,
-    permissions
-) VALUES (
-    ?, ?, ?
-)
-RETURNING id
+INSERT INTO users (username, password_hash, permissions)
+VALUES (?, ?, ?)
+RETURNING id, username
 `
 
 type CreateUserParams struct {
@@ -27,15 +22,21 @@ type CreateUserParams struct {
 	Permissions  int64  `json:"permissions"`
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, error) {
+type CreateUserRow struct {
+	ID       int64  `json:"id"`
+	Username string `json:"username"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
 	row := q.db.QueryRowContext(ctx, createUser, arg.Username, arg.PasswordHash, arg.Permissions)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
+	var i CreateUserRow
+	err := row.Scan(&i.ID, &i.Username)
+	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, password_hash, permissions, telegram_chat_id, created_at FROM users
+SELECT id, username, password_hash, permissions, telegram_chat_id, created_at
+FROM users
 WHERE id = ?
 `
 
@@ -53,8 +54,29 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 	return i, err
 }
 
+const getUserByTelegramID = `-- name: GetUserByTelegramID :one
+SELECT id, username, password_hash, permissions, telegram_chat_id, created_at
+FROM users
+WHERE telegram_chat_id = ?
+`
+
+func (q *Queries) GetUserByTelegramID(ctx context.Context, telegramChatID sql.NullInt64) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByTelegramID, telegramChatID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.Permissions,
+		&i.TelegramChatID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, password_hash, permissions, telegram_chat_id, created_at FROM users
+SELECT id, username, password_hash, permissions, telegram_chat_id, created_at
+FROM users
 WHERE username = ?
 `
 

@@ -1,0 +1,67 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Login - 1li.tw">
+  <main class="flex flex-col items-center justify-center flex-grow px-4">
+    <div class="w-full max-w-md">
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h2 class="card-title text-3xl font-bold justify-center mb-6">Login to Your Account</h2>
+          <form id="login-form">
+            <div class="form-control">
+              <label class="label" for="username">
+                <span class="label-text">Username</span>
+              </label>
+              <input type="text" id="username" name="username" placeholder="your_username" class="input input-bordered" required />
+            </div>
+            <div class="form-control mt-4">
+              <label class="label" for="password">
+                <span class="label-text">Password</span>
+              </label>
+              <input type="password" id="password" name="password" placeholder="********" class="input input-bordered" required />
+            </div>
+            <div class="form-control mt-6">
+              <button type="submit" class="btn btn-primary">Login</button>
+            </div>
+          </form>
+          <p id="error-message" class="text-error mt-4 text-center"></p>
+          <div class="divider">New here?</div>
+          <a href="/register" class="btn btn-outline w-full">Create an Account</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const form = document.getElementById('login-form');
+    const errorMessage = document.getElementById('error-message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const username = formData.get('username');
+      const password = formData.get('password');
+      errorMessage.textContent = '';
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Login failed');
+        }
+
+        // On success, redirect to the dashboard
+        window.location.href = '/dashboard';
+
+      } catch (err) {
+        errorMessage.textContent = err.message;
+      }
+    });
+  </script>
+</Layout>

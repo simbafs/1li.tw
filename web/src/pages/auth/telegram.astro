@@ -1,0 +1,81 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const token = Astro.url.searchParams.get('token');
+---
+
+<Layout title="Link Telegram Account - 1li.tw">
+  <main class="flex flex-col items-center justify-center flex-grow px-4">
+    <div id="auth-card" class="card w-full max-w-md bg-base-100 shadow-xl">
+      <div class="card-body items-center text-center">
+        <h2 class="card-title text-3xl font-bold mb-4">Link Your Telegram Account</h2>
+        <p id="status-message" class="mb-6">
+          Click the button below to confirm linking your account.
+        </p>
+        <div class="card-actions">
+          <button id="confirm-button" class="btn btn-primary btn-lg">Confirm</button>
+        </div>
+        <p id="error-message" class="text-error mt-4"></p>
+      </div>
+    </div>
+  </main>
+
+  <script define:vars={{ token }}>
+    const confirmButton = document.getElementById('confirm-button');
+    const statusMessage = document.getElementById('status-message');
+    const errorMessage = document.getElementById('error-message');
+    const card = document.getElementById('auth-card');
+
+    // Check for login status first
+    // A simple check: if there's no JWT cookie, we assume not logged in.
+    // A better check would be to hit a /api/me endpoint.
+    if (!document.cookie.includes('jwt=')) {
+        statusMessage.textContent = 'You need to log in first.';
+        confirmButton.textContent = 'Go to Login';
+        confirmButton.onclick = () => {
+            // Save the current page to redirect back after login
+            sessionStorage.setItem('postLoginRedirect', window.location.href);
+            window.location.href = '/login';
+        };
+    } else {
+        confirmButton.addEventListener('click', async () => {
+            errorMessage.textContent = '';
+            confirmButton.classList.add('loading', 'disabled');
+
+            try {
+                const response = await fetch('/api/auth/telegram/link', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ token }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to link account.');
+                }
+
+                card.innerHTML = `
+                    <div class="card-body items-center text-center">
+                        <h2 class="card-title text-3xl font-bold mb-4 text-success">Success!</h2>
+                        <p>Your Telegram account has been successfully linked. You can now close this window and return to Telegram.</p>
+                    </div>
+                `;
+
+            } catch (err) {
+                errorMessage.textContent = err.message;
+                confirmButton.classList.remove('loading', 'disabled');
+            }
+        });
+    }
+
+    // After login, redirect back if needed
+    const postLoginRedirect = sessionStorage.getItem('postLoginRedirect');
+    if (postLoginRedirect && document.cookie.includes('jwt=')) {
+        sessionStorage.removeItem('postLoginRedirect');
+        window.location.href = postLoginRedirect;
+    }
+  </script>
+</Layout>
