@@ -109,4 +109,3 @@ func SetupRouter(db *sql.DB, jwtSecret string, webDist embed.FS) *gin.Engine {
 
 	return router
 }
-

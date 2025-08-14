@@ -17,4 +17,3 @@ func TestGetByUsername_NotFound(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, domain.ErrNotFound, err)
 }
-

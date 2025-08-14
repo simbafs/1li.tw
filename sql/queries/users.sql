@@ -1,20 +1,20 @@
 -- name: CreateUser :one
 INSERT INTO users (username, password_hash, permissions)
 VALUES (?, ?, ?)
-RETURNING id, username;
+RETURNING *;
 
 -- name: GetUserByUsername :one
-SELECT id, username, password_hash, permissions, telegram_chat_id, created_at
+SELECT *
 FROM users
 WHERE username = ?;
 
 -- name: GetUserByID :one
-SELECT id, username, password_hash, permissions, telegram_chat_id, created_at
+SELECT *
 FROM users
 WHERE id = ?;
 
 -- name: GetUserByTelegramID :one
-SELECT id, username, password_hash, permissions, telegram_chat_id, created_at
+SELECT *
 FROM users
 WHERE telegram_chat_id = ?;
 

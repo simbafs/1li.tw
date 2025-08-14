@@ -78,10 +78,10 @@ func (r *shortURLRepository) ListByUserID(ctx context.Context, userID int64) ([]
 	urls := make([]domain.ShortURL, len(rows))
 	for i, row := range rows {
 		urls[i] = domain.ShortURL{
-			ID:          row.ID,
-			ShortPath:   row.ShortPath,
-			OriginalURL: row.OriginalURL,
-			CreatedAt:   row.CreatedAt,
+			ID:          row.ShortUrl.ID,
+			ShortPath:   row.ShortUrl.ShortPath,
+			OriginalURL: row.ShortUrl.OriginalURL,
+			CreatedAt:   row.ShortUrl.CreatedAt,
 			UserID:      userID,
 			TotalClicks: row.TotalClicks,
 		}
@@ -105,11 +105,11 @@ func (r *shortURLRepository) ListAll(ctx context.Context) ([]domain.ShortURL, er
 	urls := make([]domain.ShortURL, len(rows))
 	for i, row := range rows {
 		urls[i] = domain.ShortURL{
-			ID:          row.ID,
-			ShortPath:   row.ShortPath,
-			OriginalURL: row.OriginalURL,
-			CreatedAt:   row.CreatedAt,
-			UserID:      row.UserID,
+			ID:          row.ShortUrl.ID,
+			ShortPath:   row.ShortUrl.ShortPath,
+			OriginalURL: row.ShortUrl.OriginalURL,
+			CreatedAt:   row.ShortUrl.CreatedAt,
+			UserID:      row.ShortUrl.UserID,
 			TotalClicks: row.TotalClicks,
 		}
 	}

@@ -13,7 +13,7 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (username, password_hash, permissions)
 VALUES (?, ?, ?)
-RETURNING id, username
+RETURNING id, username, password_hash, permissions, telegram_chat_id, created_at
 `
 
 type CreateUserParams struct {
@@ -22,15 +22,17 @@ type CreateUserParams struct {
 	Permissions  int64  `json:"permissions"`
 }
 
-type CreateUserRow struct {
-	ID       int64  `json:"id"`
-	Username string `json:"username"`
-}
-
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRowContext(ctx, createUser, arg.Username, arg.PasswordHash, arg.Permissions)
-	var i CreateUserRow
-	err := row.Scan(&i.ID, &i.Username)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.Permissions,
+		&i.TelegramChatID,
+		&i.CreatedAt,
+	)
 	return i, err
 }
 

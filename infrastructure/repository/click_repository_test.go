@@ -74,4 +74,3 @@ func TestClickRepository(t *testing.T) {
 	require.Equal(t, "Go", browserCounts[0].Key)
 	require.Equal(t, int64(1), browserCounts[0].Count)
 }
-
