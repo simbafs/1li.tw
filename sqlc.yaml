@@ -13,3 +13,4 @@ sql:
                   original_url: 'OriginalURL'
                   short_url_id: 'ShortURLID'
                   os_name: 'OSName'
+                  ip_address: 'IPAddress'

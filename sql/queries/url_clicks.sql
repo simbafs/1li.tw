@@ -1,6 +1,6 @@
 -- name: CreateURLClick :one
-INSERT INTO url_clicks (short_url_id, country_code, os_name, browser_name, raw_user_agent)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO url_clicks (short_url_id, country_code, os_name, browser_name, raw_user_agent, ip_address)
+VALUES (?, ?, ?, ?, ?, ?)
 RETURNING id;
 
 -- name: CountClicksByShortURLID :one

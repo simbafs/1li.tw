@@ -29,6 +29,7 @@ func (r *clickRepository) Insert(ctx context.Context, c *domain.URLClick) (int64
 		OSName:       sql.NullString{String: c.OSName, Valid: c.OSName != ""},
 		BrowserName:  sql.NullString{String: c.BrowserName, Valid: c.BrowserName != ""},
 		RawUserAgent: sql.NullString{String: c.RawUserAgent, Valid: c.RawUserAgent != ""},
+		IPAddress:    sql.NullString{String: c.IPAddress, Valid: c.IPAddress != ""},
 	})
 	if err != nil {
 		return 0, err

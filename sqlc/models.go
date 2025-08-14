@@ -31,6 +31,7 @@ type UrlClick struct {
 	OSName       sql.NullString `json:"os_name"`
 	BrowserName  sql.NullString `json:"browser_name"`
 	RawUserAgent sql.NullString `json:"raw_user_agent"`
+	IPAddress    sql.NullString `json:"ip_address"`
 }
 
 type User struct {

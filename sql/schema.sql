@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS url_clicks (
     os_name TEXT,
     browser_name TEXT,
     raw_user_agent TEXT,
+    ip_address TEXT,
     FOREIGN KEY (short_url_id) REFERENCES short_urls(id)
 );
 

@@ -27,16 +27,16 @@ var (
 var ReservedPathsPattern = regexp.MustCompile(`^/(api|auth|admin|assets|static)/.*|/favicon.ico|/robots.txt$`)
 
 type URLUseCase struct {
-	urlRepo  domain.ShortURLRepository
-	userRepo domain.UserRepository
-	// clickSink will be used for async click recording
-	// clickSink ClickSink
+	urlRepo   domain.ShortURLRepository
+	userRepo  domain.UserRepository
+	clickRepo domain.ClickRepository
 }
 
-func NewURLUseCase(urlRepo domain.ShortURLRepository, userRepo domain.UserRepository) *URLUseCase {
+func NewURLUseCase(urlRepo domain.ShortURLRepository, userRepo domain.UserRepository, clickRepo domain.ClickRepository) *URLUseCase {
 	return &URLUseCase{
-		urlRepo:  urlRepo,
-		userRepo: userRepo,
+		urlRepo:   urlRepo,
+		userRepo:  userRepo,
+		clickRepo: clickRepo,
 	}
 }
 
@@ -168,6 +168,28 @@ func (uc *URLUseCase) ListByUser(ctx context.Context, user *domain.User) ([]doma
 
 func (uc *URLUseCase) GetByPath(ctx context.Context, path string) (*domain.ShortURL, error) {
 	return uc.urlRepo.GetByPath(ctx, path)
+}
+
+func (uc *URLUseCase) RecordClick(ctx context.Context, shortURLID int64, userAgent string, ipAddress string) {
+	go func() {
+		// In a real application, you would use a GeoIP service and a User-Agent parser here.
+		// For now, we'll just log the raw data.
+		click := &domain.URLClick{
+			ShortURLID:   shortURLID,
+			ClickedAt:    time.Now(),
+			RawUserAgent: userAgent,
+			IPAddress:    ipAddress,
+			// TODO: CountryCode, OSName, BrowserName would be populated by the services.
+		}
+
+		// We use a background context because the original request's context might be cancelled.
+		_, err := uc.clickRepo.Insert(context.Background(), click)
+		if err != nil {
+			// Log the error, but don't block the main application flow.
+			// In a real app, you'd use a structured logger.
+			fmt.Printf("Error recording click: %v\n", err)
+		}
+	}()
 }
 
 // isValidURL checks if a string is a valid URL with http or https protocol.

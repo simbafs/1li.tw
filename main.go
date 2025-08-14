@@ -110,8 +110,9 @@ func startTelegramBot(cfg *config.Config, db *sql.DB) {
 	// This suggests a dependency injection container would be beneficial for a larger app.
 	userRepo := repository.NewUserRepository(db)
 	urlRepo := repository.NewShortURLRepository(db)
+	clickRepo := repository.NewClickRepository(db)
 	userUseCase := application.NewUserUseCase(userRepo, cfg.JWTSecret)
-	urlUseCase := application.NewURLUseCase(urlRepo, userRepo)
+	urlUseCase := application.NewURLUseCase(urlRepo, userRepo, clickRepo)
 
 	// The base URL for links needs to be configured.
 	// For now, we'll construct it from the server port.

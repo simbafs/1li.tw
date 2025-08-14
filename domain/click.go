@@ -14,6 +14,7 @@ type URLClick struct {
 	OSName       string
 	BrowserName  string
 	RawUserAgent string
+	IPAddress    string
 }
 
 // TimeBucketCount is used for aggregating click counts over time intervals.

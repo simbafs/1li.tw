@@ -25,8 +25,8 @@ func (q *Queries) CountClicksByShortURLID(ctx context.Context, shortUrlID int64)
 }
 
 const createURLClick = `-- name: CreateURLClick :one
-INSERT INTO url_clicks (short_url_id, country_code, os_name, browser_name, raw_user_agent)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO url_clicks (short_url_id, country_code, os_name, browser_name, raw_user_agent, ip_address)
+VALUES (?, ?, ?, ?, ?, ?)
 RETURNING id
 `
 
@@ -36,6 +36,7 @@ type CreateURLClickParams struct {
 	OSName       sql.NullString `json:"os_name"`
 	BrowserName  sql.NullString `json:"browser_name"`
 	RawUserAgent sql.NullString `json:"raw_user_agent"`
+	IPAddress    sql.NullString `json:"ip_address"`
 }
 
 func (q *Queries) CreateURLClick(ctx context.Context, arg CreateURLClickParams) (int64, error) {
@@ -45,6 +46,7 @@ func (q *Queries) CreateURLClick(ctx context.Context, arg CreateURLClickParams) 
 		arg.OSName,
 		arg.BrowserName,
 		arg.RawUserAgent,
+		arg.IPAddress,
 	)
 	var id int64
 	err := row.Scan(&id)

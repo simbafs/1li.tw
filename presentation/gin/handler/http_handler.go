@@ -138,6 +138,7 @@ func (h *URLHandler) Redirect(c *gin.Context) {
 		return
 	}
 	// TODO: Record click async
+	h.urlUseCase.RecordClick(c.Request.Context(), shortURL.ID, c.Request.UserAgent(), c.ClientIP())
 	c.Redirect(http.StatusFound, shortURL.OriginalURL)
 }
 

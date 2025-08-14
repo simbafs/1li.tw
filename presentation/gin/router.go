@@ -22,7 +22,7 @@ func SetupRouter(db *sql.DB, jwtSecret string, webDist embed.FS) *gin.Engine {
 
 	// Initialize use cases
 	userUseCase := application.NewUserUseCase(userRepo, jwtSecret)
-	urlUseCase := application.NewURLUseCase(urlRepo, userRepo)
+	urlUseCase := application.NewURLUseCase(urlRepo, userRepo, analyticsRepo)
 	analyticsUseCase := application.NewAnalyticsUseCase(analyticsRepo, urlRepo)
 	telegramUseCase := application.NewTelegramUseCase(db, userRepo)
 
