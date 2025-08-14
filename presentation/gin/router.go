@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"1litw/application"
+	"1litw/infrastructure/external"
 	"1litw/infrastructure/repository"
 	"1litw/presentation/gin/handler"
 
@@ -20,9 +21,13 @@ func SetupRouter(db *sql.DB, jwtSecret string, webDist embed.FS) *gin.Engine {
 	urlRepo := repository.NewShortURLRepository(db)
 	analyticsRepo := repository.NewClickRepository(db)
 
+	// Initialize external services
+	uaParser := external.NewUAParserService()
+	geoIP := external.NewGeoIPService()
+
 	// Initialize use cases
 	userUseCase := application.NewUserUseCase(userRepo, jwtSecret)
-	urlUseCase := application.NewURLUseCase(urlRepo, userRepo, analyticsRepo)
+	urlUseCase := application.NewURLUseCase(urlRepo, userRepo, analyticsRepo, uaParser, geoIP)
 	analyticsUseCase := application.NewAnalyticsUseCase(analyticsRepo, urlRepo)
 	telegramUseCase := application.NewTelegramUseCase(db, userRepo)
 

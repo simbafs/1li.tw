@@ -30,13 +30,23 @@ type URLUseCase struct {
 	urlRepo   domain.ShortURLRepository
 	userRepo  domain.UserRepository
 	clickRepo domain.ClickRepository
+	uaParser  domain.UAParserService
+	geoIP     domain.GeoIPService
 }
 
-func NewURLUseCase(urlRepo domain.ShortURLRepository, userRepo domain.UserRepository, clickRepo domain.ClickRepository) *URLUseCase {
+func NewURLUseCase(
+	urlRepo domain.ShortURLRepository,
+	userRepo domain.UserRepository,
+	clickRepo domain.ClickRepository,
+	uaParser domain.UAParserService,
+	geoIP domain.GeoIPService,
+) *URLUseCase {
 	return &URLUseCase{
 		urlRepo:   urlRepo,
 		userRepo:  userRepo,
 		clickRepo: clickRepo,
+		uaParser:  uaParser,
+		geoIP:     geoIP,
 	}
 }
 
@@ -172,14 +182,17 @@ func (uc *URLUseCase) GetByPath(ctx context.Context, path string) (*domain.Short
 
 func (uc *URLUseCase) RecordClick(ctx context.Context, shortURLID int64, userAgent string, ipAddress string) {
 	go func() {
-		// In a real application, you would use a GeoIP service and a User-Agent parser here.
-		// For now, we'll just log the raw data.
+		uaResult := uc.uaParser.Parse(userAgent)
+		countryCode, _ := uc.geoIP.CountryCode(ipAddress) // Ignoring error for simplicity in this async task
+
 		click := &domain.URLClick{
 			ShortURLID:   shortURLID,
 			ClickedAt:    time.Now(),
 			RawUserAgent: userAgent,
 			IPAddress:    ipAddress,
-			// TODO: CountryCode, OSName, BrowserName would be populated by the services.
+			CountryCode:  countryCode,
+			OSName:       uaResult.OSName,
+			BrowserName:  uaResult.BrowserName,
 		}
 
 		// We use a background context because the original request's context might be cancelled.

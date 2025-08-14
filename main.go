@@ -9,6 +9,7 @@ import (
 	"1litw/application"
 	"1litw/config"
 	"1litw/domain"
+	"1litw/infrastructure/external"
 	"1litw/infrastructure/repository"
 	"1litw/infrastructure/telegram"
 	"1litw/presentation/gin"
@@ -111,8 +112,10 @@ func startTelegramBot(cfg *config.Config, db *sql.DB) {
 	userRepo := repository.NewUserRepository(db)
 	urlRepo := repository.NewShortURLRepository(db)
 	clickRepo := repository.NewClickRepository(db)
+	uaParser := external.NewUAParserService()
+	geoIP := external.NewGeoIPService()
 	userUseCase := application.NewUserUseCase(userRepo, cfg.JWTSecret)
-	urlUseCase := application.NewURLUseCase(urlRepo, userRepo, clickRepo)
+	urlUseCase := application.NewURLUseCase(urlRepo, userRepo, clickRepo, uaParser, geoIP)
 
 	// The base URL for links needs to be configured.
 	// For now, we'll construct it from the server port.
