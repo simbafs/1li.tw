@@ -89,6 +89,17 @@ func (uc *UserUseCase) GetMe(ctx context.Context, userID int64) (*domain.User, e
 	return uc.repo.GetByID(ctx, userID)
 }
 
+func (uc *UserUseCase) GetAnonymousUser(ctx context.Context) (*domain.User, error) {
+	user, err := uc.repo.GetByUsername(ctx, "anonymous")
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			return nil, errors.New("critical: anonymous user not found in database")
+		}
+		return nil, err
+	}
+	return user, nil
+}
+
 func (uc *UserUseCase) GetUserByTelegramID(ctx context.Context, telegramID int64) (*domain.User, error) {
 	return uc.repo.GetByTelegramID(ctx, telegramID)
 }

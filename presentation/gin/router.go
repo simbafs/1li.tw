@@ -49,15 +49,15 @@ func SetupRouter(db *sql.DB, jwtSecret string, webDist embed.FS) *gin.Engine {
 		{
 			authRequired.POST("/auth/telegram/link", authHandler.LinkTelegram)
 
-			urls := authRequired.Group("/urls")
-			{
-				urls.POST("", urlHandler.CreateShortURL)
-				urls.GET("", urlHandler.GetMyURLs)
-				urls.DELETE("/:id", urlHandler.DeleteShortURL)
-				urls.GET("/:id/stats", urlHandler.GetStats)
-			}
+			// urls.POST("", urlHandler.CreateShortURL) // Will be moved
+			authRequired.GET("", urlHandler.GetMyURLs)
+			authRequired.DELETE("/:id", urlHandler.DeleteShortURL)
+			authRequired.GET("/:id/stats", urlHandler.GetStats)
 			// Admin routes would be nested here with another middleware
 		}
+
+		// URL creation can be done by anonymous users
+		api.POST("/urls", handler.OptionalAuthMiddleware(jwtSecret, userUseCase), urlHandler.CreateShortURL)
 	}
 
 	// Redirection routes

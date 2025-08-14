@@ -72,7 +72,7 @@ func (uc *URLUseCase) CreateShortURL(ctx context.Context, user *domain.User, ori
 
 	// 4. Check for uniqueness
 	existing, err := uc.urlRepo.GetByPath(ctx, shortPath)
-	if err != nil {
+	if err != nil && err != domain.ErrNotFound {
 		return nil, fmt.Errorf("failed to check path existence: %w", err)
 	}
 	if existing != nil {
