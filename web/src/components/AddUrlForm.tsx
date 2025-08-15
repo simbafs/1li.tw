@@ -1,26 +1,24 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { BASE, createUrl } from '../lib/api'
+import { canCreateAny, canCreatePrefix } from '../lib/permissions'
 import { Input } from './Input'
+import { useUser } from '../hooks/useUser'
 
-export function AddUrlForm() {
+export function AddUrlForm({ canCollapse = false }: { canCollapse?: boolean }) {
+	const [collapsed, setCollapsed] = useState(canCollapse)
+
 	const [originalUrl, setOriginalUrl] = useState('https://')
+	const [withPrefix, setWithPrefix] = useState(true)
 	const [customPath, setCustomPath] = useState('')
+
 	const [error, setError] = useState('')
 	const [success, setSuccess] = useState('')
 
-	const [loggedIn, setLoggedIn] = useState(false)
-
-	useEffect(() => {
-		const user = localStorage.getItem('user')
-		if (user) {
-			setLoggedIn(true)
-		} else {
-			setLoggedIn(false)
-		}
-	}, [])
+	const user = useUser()
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
+
 		setError('')
 		setSuccess('')
 
@@ -29,10 +27,15 @@ export function AddUrlForm() {
 			return
 		}
 
+		let path = customPath.trim().replaceAll('/', '')
+		if (withPrefix && user) {
+			path = `@${user.username}/${customPath}`
+		}
+
 		try {
 			const data = await createUrl({
 				original_url: originalUrl,
-				...(customPath && { custom_path: customPath }),
+				...(customPath && { custom_path: path }),
 			})
 			setSuccess(`Success! Short URL is: ${BASE}/${data.ShortPath}`)
 			setOriginalUrl('')
@@ -43,38 +46,57 @@ export function AddUrlForm() {
 	}
 
 	return (
-		<div className="w-full px-20">
-			<h2 className="card-title">
-				{loggedIn ? 'Create a new Short URL' : 'Create a quick, anonymous Short URL'}
+		<div className="collapse w-full">
+			<input type="checkbox" checked={collapsed || !canCollapse} onChange={() => setCollapsed(!collapsed)} />
+			<h2 className="collapse-title">
+				{user ? 'Create a new Short URL' : 'Create a quick, anonymous Short URL'}
+				{canCollapse && <span className="collapse-arrow">{collapsed ? '▼' : '▲'}</span>}
 			</h2>
-			<form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-				<Input
-					label="Original URL"
-					type="url"
-					placeholder="https://example.com"
-					value={originalUrl}
-					onChange={e => setOriginalUrl(e.target.value)}
-					pattern="^(https?://)?([a-zA-Z0-9]([a-zA-Z0-9\-].*[a-zA-Z0-9])?\.)+[a-zA-Z].*$"
-					required
-					validate
-				/>
-				{loggedIn && (
+			<div className="collapse-content">
+				<form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
 					<Input
-						label="Custom Path"
-						type="text"
-						placeholder="my-custom-path"
-						value={customPath}
-						onChange={e => setCustomPath(e.target.value)}
-						optional
+						label="Original URL"
+						type="url"
+						placeholder="https://example.com"
+						value={originalUrl}
+						onChange={e => setOriginalUrl(e.target.value)}
+						pattern="^(https?://)?([a-zA-Z0-9]([a-zA-Z0-9\-].*[a-zA-Z0-9])?\.)+[a-zA-Z].*$"
+						required
+						validate
 					/>
-				)}
-				<button type="submit" className="btn btn-primary w-full">
-					Shorten
-				</button>
-			</form>
-			{error && <div className="alert alert-error mt-4">{error}</div>}
-			{success && <div className="alert alert-success mt-4">{success}</div>}
-			{/* </div> */}
+					{user && canCreatePrefix(user.permissions) && (
+						<>
+							<label className="label">Custom Path</label>
+							{user && canCreateAny(user.permissions) && (
+								<label className="label">
+									<input
+										type="checkbox"
+										className="toggle toggle-primary toggle-xs"
+										checked={withPrefix}
+										onChange={e => setWithPrefix(e.target.checked)}
+									/>
+									With Prefix
+								</label>
+							)}
+							<label className="input join-item flex w-full">
+								{withPrefix && <span className="label">{`@${user.username}/`}</span>}
+								<input
+									className="w-full"
+									type="text"
+									placeholder="my-custom-path"
+									value={customPath}
+									onChange={e => setCustomPath(e.target.value)}
+								/>
+							</label>
+						</>
+					)}
+					<button type="submit" className="btn btn-primary w-full">
+						Shorten
+					</button>
+				</form>
+				{error && <div className="alert alert-error mt-4">{error}</div>}
+				{success && <div className="alert alert-success mt-4">{success}</div>}
+			</div>
 		</div>
 	)
 }

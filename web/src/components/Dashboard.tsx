@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { getUrls, deleteUrl, BASE } from '../lib/api'
 import { AddUrlForm } from './AddUrlForm'
+import { canDeleteOwn, canViewOwnStats } from '../lib/permissions'
+import type { User } from '../hooks/useUser'
 
 interface Url {
 	ID: number
@@ -23,6 +25,22 @@ export function Dashboard() {
 	const [urls, setUrls] = useState<Url[]>([])
 	const [error, setError] = useState('')
 	const [loading, setLoading] = useState(true)
+	const [user, setUser] = useState<User | null>(null)
+
+	useEffect(() => {
+		const userStr = localStorage.getItem('user')
+		if (userStr) {
+			try {
+				setUser(JSON.parse(userStr))
+			} catch (e) {
+				console.error('Failed to parse user from localStorage', e)
+				setUser(null)
+				// Redirect to login if user data is corrupted
+				localStorage.removeItem('user')
+				window.location.href = '/login'
+			}
+		}
+	}, [])
 
 	const fetchUrls = async () => {
 		try {
@@ -56,21 +74,15 @@ export function Dashboard() {
 		}
 	}
 
-	if (loading) {
-		return (
-			<div className="text-center">
-				<span className="loading loading-spinner loading-lg"></span>
-			</div>
-		)
+	if (loading || !user) {
+		return <span className="loading loading-spinner loading-lg" />
 	}
 
 	return (
-		<div>
-			<div className="mb-8">
-				<AddUrlForm />
-			</div>
+		<div className="flex flex-col gap-8">
+			<AddUrlForm canCollapse />
 
-			<h2 className="mb-4 text-2xl font-bold">My URLs</h2>
+			<h2 className="text-2xl font-bold">My URLs</h2>
 			{error && <div className="alert alert-error">{error}</div>}
 			<div className="overflow-x-auto">
 				<table className="table w-full">
@@ -99,13 +111,20 @@ export function Dashboard() {
 								<td className="max-w-xs truncate">{url.OriginalURL}</td>
 								<td>{url.TotalClicks}</td>
 								<td>{formatDate(url.CreatedAt)}</td>
-								<td className="flex gap-2">
-									<a href={`/dashboard/stats?id=${url.ID}`} className="btn btn-sm">
-										Stats
-									</a>
-									<button onClick={() => handleDelete(url.ID)} className="btn btn-sm text-error">
-										Delete
-									</button>
+								<td className="join">
+									{canViewOwnStats(user.permissions) && (
+										<a href={`/dashboard/stats?id=${url.ID}`} className="btn btn-sm join-item">
+											Stats
+										</a>
+									)}
+									{canDeleteOwn(user.permissions) && (
+										<button
+											onClick={() => handleDelete(url.ID)}
+											className="btn btn-sm text-error join-item"
+										>
+											Delete
+										</button>
+									)}
 								</td>
 							</tr>
 						))}

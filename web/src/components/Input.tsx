@@ -4,11 +4,12 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 	label: string
 	validate?: boolean
 	required?: boolean
+	prefix?: string
 }
 
-export function Input({ label, validate, required = false, ...props }: InputProps) {
+export function Input({ label, validate, required = false, prefix, ...props }: InputProps) {
 	return (
-		<div className="form-control w-full">
+		<>
 			<label className="label">
 				<span className="label-text">{label}</span>
 				{required && (
@@ -17,11 +18,14 @@ export function Input({ label, validate, required = false, ...props }: InputProp
 					</span>
 				)}
 			</label>
-			<input
-				required={required}
-				className={`input w-full ${validate ? 'input-bordered' : ''} ${props.className || ''}`}
-				{...props}
-			/>
-		</div>
+			{prefix ? (
+				<label className="input flex w-full">
+					<span className="label">{prefix}</span>
+					<input required={required} className={`w-full ${props.className || ''}`} {...props} />
+				</label>
+			) : (
+				<input required={required} className={`input w-full ${props.className || ''}`} {...props} />
+			)}
+		</>
 	)
 }
