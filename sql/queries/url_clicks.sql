@@ -44,6 +44,8 @@ WHERE short_url_id = ? AND clicked_at >= sqlc.arg('from') AND clicked_at <= sqlc
 GROUP BY browser_name
 ORDER BY count DESC;
 
+-- TODO: Add query to get other stats
+
 -- name: GetUnprocessedClicks :many
 SELECT id, ip_address
 FROM url_clicks

@@ -47,7 +47,7 @@ func (a *AnalyticsUseCase) GetOverviewByID(ctx context.Context, user *domain.Use
 	canViewOwn := user != nil && user.Permissions.Has(domain.PermViewOwnStats)
 	canViewAny := user != nil && user.Permissions.Has(domain.PermViewAnyStats)
 
-	if !canViewAny && !(isOwner && canViewOwn) {
+	if !(canViewAny || (isOwner && canViewOwn)) {
 		return nil, ErrNoPermission
 	}
 
