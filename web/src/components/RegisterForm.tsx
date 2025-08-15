@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { register } from '../lib/api'
+import { Input } from './Input'
 
 export function RegisterForm() {
 	const [username, setUsername] = useState('')
@@ -31,50 +32,37 @@ export function RegisterForm() {
 	}
 
 	return (
-		<div className="card bg-base-200 w-full max-w-sm shadow-xl">
-			<div className="card-body">
-				<h2 className="card-title">Register</h2>
-				<form onSubmit={handleSubmit}>
-					<div className="form-control">
-						<label className="label">
-							<span className="label-text">Username</span>
-						</label>
-						<input
-							type="text"
-							placeholder="username"
-							className="input input-bordered"
-							value={username}
-							onChange={e => setUsername(e.target.value)}
-							required
-						/>
-					</div>
-					<div className="form-control">
-						<label className="label">
-							<span className="label-text">Password</span>
-						</label>
-						<input
-							type="password"
-							placeholder="password"
-							className="input input-bordered"
-							value={password}
-							onChange={e => setPassword(e.target.value)}
-							required
-						/>
-					</div>
-					<div className="form-control mt-6">
-						<button type="submit" className="btn btn-primary">
-							Register
-						</button>
-					</div>
-				</form>
-				{error && <div className="alert alert-error mt-4">{error}</div>}
-				{success && <div className="alert alert-success mt-4">{success}</div>}
-				<div className="mt-4 text-center">
-					<a href="/login" className="link">
-						Already have an account? Login
-					</a>
-				</div>
+		<fieldset className="fieldset bg-base-200 border-base-300 rounded-box w-xs border px-8 py-4">
+			<legend className="card-title">Register</legend>
+			<form onSubmit={handleSubmit} className="flex flex-col gap-4">
+				<Input
+					label="Username"
+					type="text"
+					placeholder="your username"
+					value={username}
+					onChange={e => setUsername(e.target.value)}
+					required
+				/>
+				<Input
+					label="Password"
+					type="password"
+					placeholder="your password"
+					value={password}
+					onChange={e => setPassword(e.target.value)}
+					required
+				/>
+				<button type="submit" className="btn btn-primary w-full">
+					Register
+				</button>
+			</form>
+			{error && <div className="alert alert-error mt-4">{error}</div>}
+			{success && <div className="alert alert-success mt-4">{success}</div>}
+			<div className="mt-4 text-center">
+				Already have an account?{' '}
+				<a href="/login" className="link">
+					Login
+				</a>
 			</div>
-		</div>
+		</fieldset>
 	)
 }

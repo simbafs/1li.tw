@@ -124,7 +124,6 @@ func (h *URLHandler) CreateShortURL(c *gin.Context) {
 
 	shortURL, err := h.urlUseCase.CreateShortURL(c.Request.Context(), user.(*domain.User), req.OriginalURL, req.CustomPath)
 	if err != nil {
-		// TODO: Handle specific errors
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -139,7 +138,6 @@ func (h *URLHandler) Redirect(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 		return
 	}
-	// TODO: Record click async
 	h.urlUseCase.RecordClick(c.Request.Context(), shortURL.ID, c.Request.UserAgent(), c.ClientIP())
 	c.Redirect(http.StatusFound, shortURL.OriginalURL)
 }

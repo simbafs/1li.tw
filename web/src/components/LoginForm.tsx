@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { login } from '../lib/api'
+import { Input } from './Input'
 
 export function LoginForm() {
 	const [username, setUsername] = useState('')
@@ -10,64 +11,47 @@ export function LoginForm() {
 		e.preventDefault()
 		setError('')
 
-		if (!username || !password) {
-			setError('Username and password are required.')
-			return
-		}
-
 		try {
-			const user = await login({ username, password })
-			localStorage.setItem('user', JSON.stringify(user))
+			const data = await login({ username, password })
+			localStorage.setItem('user', JSON.stringify(data))
 			window.location.href = '/dashboard'
 		} catch (err: any) {
-			setError(err.info?.message || 'Failed to log in.')
+			setError(err.info?.message || 'Failed to login.')
 		}
 	}
 
 	return (
-		<div className="card bg-base-200 w-full max-w-sm shadow-xl">
-			<div className="card-body">
-				<h2 className="card-title">Login</h2>
-				<form onSubmit={handleSubmit}>
-					<div className="form-control">
-						<label className="label">
-							<span className="label-text">Username</span>
-						</label>
-						<input
-							type="text"
-							placeholder="username"
-							className="input input-bordered"
-							value={username}
-							onChange={e => setUsername(e.target.value)}
-							required
-						/>
-					</div>
-					<div className="form-control">
-						<label className="label">
-							<span className="label-text">Password</span>
-						</label>
-						<input
-							type="password"
-							placeholder="password"
-							className="input input-bordered"
-							value={password}
-							onChange={e => setPassword(e.target.value)}
-							required
-						/>
-					</div>
-					<div className="form-control mt-6">
-						<button type="submit" className="btn btn-primary">
-							Login
-						</button>
-					</div>
-				</form>
-				{error && <div className="alert alert-error mt-4">{error}</div>}
-				<div className="mt-4 text-center">
-					<a href="/register" className="link">
-						Don't have an account? Register
-					</a>
-				</div>
+		<fieldset className="fieldset bg-base-200 border-base-300 rounded-box w-xs border px-8 py-4">
+			<legend className="card-title">Login</legend>
+
+			<form onSubmit={handleSubmit} className="flex flex-col gap-4">
+				<Input
+					label="Username"
+					type="text"
+					placeholder="your username"
+					value={username}
+					onChange={e => setUsername(e.target.value)}
+					required
+				/>
+				<Input
+					label="Password"
+					type="password"
+					placeholder="your password"
+					value={password}
+					onChange={e => setPassword(e.target.value)}
+					required
+				/>
+				<button type="submit" className="btn btn-primary w-full">
+					Login
+				</button>
+			</form>
+			{error && <div className="alert alert-error mt-4">{error}</div>}
+			<div className="mt-4 text-center">
+				Do not have an account?{' '}
+				<a href="/register" className="link">
+					Register
+				</a>
 			</div>
-		</div>
+		</fieldset>
 	)
 }

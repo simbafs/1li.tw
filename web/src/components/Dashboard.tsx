@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getUrls, deleteUrl } from '../lib/api'
+import { getUrls, deleteUrl, BASE } from '../lib/api'
 import { AddUrlForm } from './AddUrlForm'
 
 interface Url {
@@ -8,6 +8,15 @@ interface Url {
 	OriginalURL: string
 	TotalClicks: number
 	CreatedAt: string
+}
+
+// format date to YYYY/MM/DD format
+function formatDate(dateString: string): string {
+	const date = new Date(dateString)
+	const year = date.getFullYear()
+	const month = String(date.getMonth() + 1).padStart(2, '0') // Months are zero-based
+	const day = String(date.getDate()).padStart(2, '0')
+	return `${year}/${month}/${day}`
 }
 
 export function Dashboard() {
@@ -79,7 +88,7 @@ export function Dashboard() {
 							<tr key={url.ID}>
 								<td>
 									<a
-										href={`/${url.ShortPath}`}
+										href={`${BASE}/${url.ShortPath}`}
 										target="_blank"
 										rel="noopener noreferrer"
 										className="link link-primary"
@@ -89,15 +98,12 @@ export function Dashboard() {
 								</td>
 								<td className="max-w-xs truncate">{url.OriginalURL}</td>
 								<td>{url.TotalClicks}</td>
-								<td>{new Date(url.CreatedAt).toLocaleDateString()}</td>
-								<td>
-									<a href={`/dashboard/stats?id=${url.ID}`} className="btn btn-ghost btn-sm">
+								<td>{formatDate(url.CreatedAt)}</td>
+								<td className="flex gap-2">
+									<a href={`/dashboard/stats?id=${url.ID}`} className="btn btn-sm">
 										Stats
 									</a>
-									<button
-										onClick={() => handleDelete(url.ID)}
-										className="btn btn-ghost btn-sm text-error"
-									>
+									<button onClick={() => handleDelete(url.ID)} className="btn btn-sm text-error">
 										Delete
 									</button>
 								</td>
