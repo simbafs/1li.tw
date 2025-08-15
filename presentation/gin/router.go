@@ -23,11 +23,10 @@ func SetupRouter(db *sql.DB, jwtSecret string, webDist embed.FS) *gin.Engine {
 
 	// Initialize external services
 	uaParser := external.NewUAParserService()
-	geoIP := external.NewGeoIPService()
 
 	// Initialize use cases
 	userUseCase := application.NewUserUseCase(userRepo, jwtSecret)
-	urlUseCase := application.NewURLUseCase(urlRepo, userRepo, analyticsRepo, uaParser, geoIP)
+	urlUseCase := application.NewURLUseCase(urlRepo, userRepo, analyticsRepo, uaParser)
 	analyticsUseCase := application.NewAnalyticsUseCase(analyticsRepo, urlRepo)
 	telegramUseCase := application.NewTelegramUseCase(db, userRepo)
 

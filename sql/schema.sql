@@ -28,6 +28,15 @@ CREATE TABLE IF NOT EXISTS url_clicks (
     browser_name TEXT,
     raw_user_agent TEXT,
     ip_address TEXT,
+    country TEXT,
+    region_name TEXT,
+    city TEXT,
+    lat REAL,
+    lon REAL,
+    isp TEXT,
+    as_info TEXT,
+    is_processed BOOLEAN NOT NULL DEFAULT FALSE,
+    is_success BOOLEAN NOT NULL DEFAULT TRUE,
     FOREIGN KEY (short_url_id) REFERENCES short_urls(id)
 );
 

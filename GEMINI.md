@@ -70,3 +70,6 @@ This project is a feature-rich URL shortener service named "1li.tw". It provides
 *   **Configuration:** The application is configured through a `.env` file. A `config.go` file is responsible for loading the configuration.
 *   **Permissions:** The application uses a bitmask-based permission system to control user access to features.
 *   **Telegram Bot:** The Telegram bot provides a command-line interface for interacting with the service. The bot's logic is handled in the `infrastructure/telegram` directory.
+
+## Test if there is error
+You should use `go build .` to check if there is error in go code, use `npm run build` for frontend code

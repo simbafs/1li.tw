@@ -13,6 +13,7 @@ import (
 	"1litw/infrastructure/repository"
 	"1litw/infrastructure/telegram"
 	"1litw/presentation/gin"
+	"1litw/infrastructure/processor"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	_ "github.com/mattn/go-sqlite3"
@@ -42,6 +43,13 @@ func main() {
 	if err := ensureInitialData(db); err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
+
+	// Setup repositories
+	clickRepo := repository.NewClickRepository(db)
+
+	// Start GeoIP Processor
+	geoIPProcessor := processor.NewGeoIPProcessor(clickRepo)
+	geoIPProcessor.Start()
 
 	// Setup router
 	router := gin.SetupRouter(db, cfg.JWTSecret, webDist)
@@ -113,9 +121,8 @@ func startTelegramBot(cfg *config.Config, db *sql.DB) {
 	urlRepo := repository.NewShortURLRepository(db)
 	clickRepo := repository.NewClickRepository(db)
 	uaParser := external.NewUAParserService()
-	geoIP := external.NewGeoIPService()
 	userUseCase := application.NewUserUseCase(userRepo, cfg.JWTSecret)
-	urlUseCase := application.NewURLUseCase(urlRepo, userRepo, clickRepo, uaParser, geoIP)
+	urlUseCase := application.NewURLUseCase(urlRepo, userRepo, clickRepo, uaParser)
 
 	// The base URL for links needs to be configured.
 	// For now, we'll construct it from the server port.

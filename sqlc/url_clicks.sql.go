@@ -228,3 +228,80 @@ func (q *Queries) GetClickStatsByTime(ctx context.Context, arg GetClickStatsByTi
 	}
 	return items, nil
 }
+
+const getUnprocessedClicks = `-- name: GetUnprocessedClicks :many
+SELECT id, ip_address
+FROM url_clicks
+WHERE is_processed = FALSE AND ip_address IS NOT NULL AND ip_address != ''
+LIMIT ?
+`
+
+type GetUnprocessedClicksRow struct {
+	ID        int64          `json:"id"`
+	IPAddress sql.NullString `json:"ip_address"`
+}
+
+func (q *Queries) GetUnprocessedClicks(ctx context.Context, limit int64) ([]GetUnprocessedClicksRow, error) {
+	rows, err := q.db.QueryContext(ctx, getUnprocessedClicks, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetUnprocessedClicksRow{}
+	for rows.Next() {
+		var i GetUnprocessedClicksRow
+		if err := rows.Scan(&i.ID, &i.IPAddress); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateClickGeoInfo = `-- name: UpdateClickGeoInfo :exec
+UPDATE url_clicks
+SET
+    is_success = ?,
+    country = ?,
+    region_name = ?,
+    city = ?,
+    lat = ?,
+    lon = ?,
+    isp = ?,
+    as_info = ?,
+    is_processed = TRUE
+WHERE ip_address = ?
+`
+
+type UpdateClickGeoInfoParams struct {
+	IsSuccess  bool            `json:"is_success"`
+	Country    sql.NullString  `json:"country"`
+	RegionName sql.NullString  `json:"region_name"`
+	City       sql.NullString  `json:"city"`
+	Lat        sql.NullFloat64 `json:"lat"`
+	Lon        sql.NullFloat64 `json:"lon"`
+	Isp        sql.NullString  `json:"isp"`
+	AsInfo     sql.NullString  `json:"as_info"`
+	IPAddress  sql.NullString  `json:"ip_address"`
+}
+
+func (q *Queries) UpdateClickGeoInfo(ctx context.Context, arg UpdateClickGeoInfoParams) error {
+	_, err := q.db.ExecContext(ctx, updateClickGeoInfo,
+		arg.IsSuccess,
+		arg.Country,
+		arg.RegionName,
+		arg.City,
+		arg.Lat,
+		arg.Lon,
+		arg.Isp,
+		arg.AsInfo,
+		arg.IPAddress,
+	)
+	return err
+}

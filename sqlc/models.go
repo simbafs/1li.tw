@@ -24,14 +24,23 @@ type TelegramAuthToken struct {
 }
 
 type UrlClick struct {
-	ID           int64          `json:"id"`
-	ShortURLID   int64          `json:"short_url_id"`
-	ClickedAt    time.Time      `json:"clicked_at"`
-	CountryCode  sql.NullString `json:"country_code"`
-	OSName       sql.NullString `json:"os_name"`
-	BrowserName  sql.NullString `json:"browser_name"`
-	RawUserAgent sql.NullString `json:"raw_user_agent"`
-	IPAddress    sql.NullString `json:"ip_address"`
+	ID           int64           `json:"id"`
+	ShortURLID   int64           `json:"short_url_id"`
+	ClickedAt    time.Time       `json:"clicked_at"`
+	CountryCode  sql.NullString  `json:"country_code"`
+	OSName       sql.NullString  `json:"os_name"`
+	BrowserName  sql.NullString  `json:"browser_name"`
+	RawUserAgent sql.NullString  `json:"raw_user_agent"`
+	IPAddress    sql.NullString  `json:"ip_address"`
+	Country      sql.NullString  `json:"country"`
+	RegionName   sql.NullString  `json:"region_name"`
+	City         sql.NullString  `json:"city"`
+	Lat          sql.NullFloat64 `json:"lat"`
+	Lon          sql.NullFloat64 `json:"lon"`
+	Isp          sql.NullString  `json:"isp"`
+	AsInfo       sql.NullString  `json:"as_info"`
+	IsProcessed  bool            `json:"is_processed"`
+	IsSuccess    bool            `json:"is_success"`
 }
 
 type User struct {

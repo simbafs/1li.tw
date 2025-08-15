@@ -15,7 +15,7 @@ type clickRepository struct {
 }
 
 // NewClickRepository creates a new instance of ClickRepository.
-func NewClickRepository(db *sql.DB) domain.ClickRepository {
+func NewClickRepository(db *sql.DB) *clickRepository {
 	return &clickRepository{
 		db:      db,
 		queries: sqlc.New(db),
@@ -130,4 +130,12 @@ func (r *clickRepository) AggregateByBrowser(ctx context.Context, shortURLID int
 		}
 	}
 	return counts, nil
+}
+
+func (r *clickRepository) GetUnprocessedClicks(ctx context.Context, limit int64) ([]sqlc.GetUnprocessedClicksRow, error) {
+	return r.queries.GetUnprocessedClicks(ctx, limit)
+}
+
+func (r *clickRepository) UpdateClickGeoInfo(ctx context.Context, arg sqlc.UpdateClickGeoInfoParams) error {
+	return r.queries.UpdateClickGeoInfo(ctx, arg)
 }

@@ -43,3 +43,23 @@ FROM url_clicks
 WHERE short_url_id = ? AND clicked_at >= sqlc.arg('from') AND clicked_at <= sqlc.arg('to')
 GROUP BY browser_name
 ORDER BY count DESC;
+
+-- name: GetUnprocessedClicks :many
+SELECT id, ip_address
+FROM url_clicks
+WHERE is_processed = FALSE AND ip_address IS NOT NULL AND ip_address != ''
+LIMIT ?;
+
+-- name: UpdateClickGeoInfo :exec
+UPDATE url_clicks
+SET
+    is_success = ?,
+    country = ?,
+    region_name = ?,
+    city = ?,
+    lat = ?,
+    lon = ?,
+    isp = ?,
+    as_info = ?,
+    is_processed = TRUE
+WHERE ip_address = ?;

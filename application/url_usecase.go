@@ -24,14 +24,13 @@ var (
 )
 
 // ReservedPathsPattern defines a regex for paths that cannot be used for custom short URLs.
-var ReservedPathsPattern = regexp.MustCompile(`^/(api|auth|admin|assets|static)/.*|/favicon.ico|/robots.txt$`)
+var ReservedPathsPattern = regexp.MustCompile(`^/(api|auth|admin|assets|static)/.*|/favicon.ico|/robots.txt$`) 
 
 type URLUseCase struct {
 	urlRepo   domain.ShortURLRepository
 	userRepo  domain.UserRepository
 	clickRepo domain.ClickRepository
 	uaParser  domain.UAParserService
-	geoIP     domain.GeoIPService
 }
 
 func NewURLUseCase(
@@ -39,14 +38,12 @@ func NewURLUseCase(
 	userRepo domain.UserRepository,
 	clickRepo domain.ClickRepository,
 	uaParser domain.UAParserService,
-	geoIP domain.GeoIPService,
 ) *URLUseCase {
 	return &URLUseCase{
 		urlRepo:   urlRepo,
 		userRepo:  userRepo,
 		clickRepo: clickRepo,
 		uaParser:  uaParser,
-		geoIP:     geoIP,
 	}
 }
 
@@ -183,16 +180,15 @@ func (uc *URLUseCase) GetByPath(ctx context.Context, path string) (*domain.Short
 func (uc *URLUseCase) RecordClick(ctx context.Context, shortURLID int64, userAgent string, ipAddress string) {
 	go func() {
 		uaResult := uc.uaParser.Parse(userAgent)
-		countryCode, _ := uc.geoIP.CountryCode(ipAddress) // Ignoring error for simplicity in this async task
 
 		click := &domain.URLClick{
 			ShortURLID:   shortURLID,
 			ClickedAt:    time.Now(),
 			RawUserAgent: userAgent,
 			IPAddress:    ipAddress,
-			CountryCode:  countryCode,
 			OSName:       uaResult.OSName,
 			BrowserName:  uaResult.BrowserName,
+			IsProcessed:  false,
 		}
 
 		// We use a background context because the original request's context might be cancelled.
