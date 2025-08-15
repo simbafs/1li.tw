@@ -19,6 +19,7 @@
 #### 前端（Astro）
 
 - `astro`
+- `react`
 - `tailwindcss`
 - `daisyui`
 - `chart.js`
@@ -52,3 +53,13 @@ dist/
 | GET    | `/api/urls/:id/stats`                          | 取得指定短網址的統計（時間、國家、系統、瀏覽器）                   | 是                     | **輸入**：Path 參數 `id`；可選 Query：`from`、`to`、`bucket`。<br>**輸出**：`200`，JSON `{ "total": number, "by_time": [...], "by_country": [...], "by_os": [...], "by_browser": [...] }` | `/stats`（透過 Use Case）                            |
 | GET    | `/api/admin/urls`                              | 取得全系統短網址列表（管理功能）                                   | 管理者                 | **輸入**：可選 Query：分頁／搜尋。<br>**輸出**：`200`，JSON `[{ "id": number, "owner": string, "short_path": string, "original_url": string, "total_clicks": number }]`                   | 無                                                   |
 | DELETE | `/api/admin/urls/:id`                          | 刪除任一短網址（管理功能）                                         | 管理者                 | **輸入**：Path 參數 `id`。<br>**輸出**：`204` 無內容                                                                                                                                      | 無                                                   |
+
+---
+
+為了方便測試，動態判斷 API URL，
+
+```js
+const API_URL = import.meta.env.PROD
+	? `${window.location.origin}${window.location.pathname}/api`
+	: 'http://localhost:8080/api'
+```

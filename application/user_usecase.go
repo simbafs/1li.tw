@@ -7,6 +7,7 @@ import (
 
 	"1litw/domain"
 	"1litw/utils"
+
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -30,7 +31,7 @@ func NewUserUseCase(repo domain.UserRepository, jwtSecret string) *UserUseCase {
 
 func (uc *UserUseCase) Register(ctx context.Context, username, password string) (*domain.User, error) {
 	existing, err := uc.repo.GetByUsername(ctx, username)
-	if err != nil {
+	if err != nil && !errors.Is(err, domain.ErrNotFound) {
 		return nil, err
 	}
 	if existing != nil {

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -40,6 +41,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 			return
 		}
+		log.Println("failed to register user:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to register user"})
 		return
 	}

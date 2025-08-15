@@ -13,6 +13,8 @@ SELECT *
 FROM short_urls
 WHERE id = ?;
 
+-- TODO: short delete
+
 -- name: DeleteShortURL :exec
 DELETE FROM short_urls
 WHERE id = ?;

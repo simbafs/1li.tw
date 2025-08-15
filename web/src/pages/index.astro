@@ -1,5 +1,8 @@
 ---
-import '../styles/global.css'
+import Layout from '../layouts/Layout.astro'
+import { AddUrlForm } from '../components/AddUrlForm'
 ---
 
-<h1>1li.tw</h1>
+<Layout title="1li.tw - Fast & Simple URL Shortener" center={true}>
+	<AddUrlForm client:load />
+</Layout>

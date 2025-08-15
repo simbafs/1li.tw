@@ -1,0 +1,90 @@
+---
+import '../styles/global.css'
+interface Props {
+	title: string
+	center?: boolean
+}
+
+const { title, center = false } = Astro.props
+---
+
+<!doctype html>
+<html lang="en" data-theme="light">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="description" content="1li.tw URL Shortener" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+	</head>
+	<body>
+		<div class="navbar bg-base-100 shadow-sm">
+			<div class="container mx-auto flex">
+				<div class="flex-1">
+					<a href="/" class="btn btn-ghost text-xl">1li.tw</a>
+				</div>
+				<div class="flex-none" id="nav-menu">
+					<ul class="menu menu-horizontal px-1">
+						<li><a href="/login">Login</a></li>
+						<li><a href="/register">Register</a></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+
+		<main class:list={['container mx-auto p-4', { 'flex flex-col items-center justify-center': center }]}>
+			<slot />
+		</main>
+
+		<footer class="footer footer-center p-4 bg-base-300 text-base-content">
+			<aside>
+				<p>Copyright © 2025 - All right reserved by 1li.tw</p>
+			</aside>
+		</footer>
+		<script>
+			document.addEventListener('DOMContentLoaded', () => {
+				const userStr = localStorage.getItem('user')
+				const navMenu = document.getElementById('nav-menu')!
+
+				if (userStr) {
+					try {
+						const user = JSON.parse(userStr)
+						if (user && user.username) {
+							navMenu.innerHTML = `
+                                <ul class="menu menu-horizontal px-1 gap-2">
+                                    <li><a class="btn btn-ghost"href="/dashboard">Dashboard</a></li>
+                                    <li><span class="btn btn-ghost">${user.username}</span></li>
+                                    <li><button class="btn btn-ghost"id="logout-btn">Logout</button></li>
+                                </ul>
+                            `
+							const logoutBtn = document.getElementById('logout-btn')!
+							logoutBtn.addEventListener('click', () => {
+								localStorage.removeItem('user')
+								// Also need to call a backend endpoint to invalidate the cookie if possible
+								window.location.href = '/'
+							})
+						}
+					} catch (e) {
+						console.error('Failed to parse user from localStorage', e)
+						localStorage.removeItem('user')
+					}
+				}
+			})
+		</script>
+	</body>
+</html>
+<style is:global>
+	:root {
+		--font-family-sans-serif: 'Inter', sans-serif;
+	}
+	body {
+		font-family: var(--font-family-sans-serif);
+		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
+	}
+	main {
+		flex-grow: 1;
+	}
+</style>

@@ -1,0 +1,15 @@
+---
+import Layout from '../../layouts/Layout.astro'
+import { Dashboard } from '../../components/Dashboard'
+---
+
+<Layout title="Dashboard - 1li.tw">
+	<Dashboard client:load />
+</Layout>
+
+<script>
+	// Redirect to login if not authenticated
+	if (typeof window !== 'undefined' && !localStorage.getItem('user')) {
+		window.location.href = '/login'
+	}
+</script>

@@ -1,0 +1,16 @@
+---
+import Layout from '../../layouts/Layout.astro'
+import { StatsPage } from '../../components/StatsPage'
+---
+
+<Layout title="URL Statistics - 1li.tw">
+	<a href="/dashboard" class="btn btn-ghost mb-4">← Back to Dashboard</a>
+	<StatsPage client:load />
+</Layout>
+
+<script>
+	// Redirect to login if not authenticated
+	if (typeof window !== 'undefined' && !localStorage.getItem('user')) {
+		window.location.href = '/login'
+	}
+</script>
