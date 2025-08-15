@@ -10,11 +10,12 @@ import (
 )
 
 type ShortUrl struct {
-	ID          int64     `json:"id"`
-	ShortPath   string    `json:"short_path"`
-	OriginalURL string    `json:"original_url"`
-	UserID      int64     `json:"user_id"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID          int64        `json:"id"`
+	ShortPath   string       `json:"short_path"`
+	OriginalURL string       `json:"original_url"`
+	UserID      int64        `json:"user_id"`
+	CreatedAt   time.Time    `json:"created_at"`
+	DeletedAt   sql.NullTime `json:"deleted_at"`
 }
 
 type TelegramAuthToken struct {
@@ -50,4 +51,5 @@ type User struct {
 	Permissions    int64         `json:"permissions"`
 	TelegramChatID sql.NullInt64 `json:"telegram_chat_id"`
 	CreatedAt      time.Time     `json:"created_at"`
+	DeletedAt      sql.NullTime  `json:"deleted_at"`
 }

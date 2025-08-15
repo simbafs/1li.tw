@@ -1,22 +1,32 @@
 -- users Table: Stores user information
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
+    username TEXT NOT NULL,
     password_hash TEXT NOT NULL,
     permissions INTEGER NOT NULL DEFAULT 0,
     telegram_chat_id BIGINT UNIQUE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_users_username
+ON users(username)
+WHERE deleted_at IS NULL;
 
 -- short_urls Table: Stores the mapping between short paths and original URLs
 CREATE TABLE IF NOT EXISTS short_urls (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    short_path TEXT NOT NULL UNIQUE,
+    short_path TEXT NOT NULL,
     original_url TEXT NOT NULL,
     user_id INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_short_urls_short_path
+ON short_urls(short_path)
+WHERE deleted_at IS NULL;
 
 -- url_clicks Table: Records each click for analytics
 CREATE TABLE IF NOT EXISTS url_clicks (

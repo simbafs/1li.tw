@@ -12,7 +12,7 @@ import (
 const createShortURL = `-- name: CreateShortURL :one
 INSERT INTO short_urls (short_path, original_url, user_id)
 VALUES (?, ?, ?)
-RETURNING id, short_path, original_url, user_id, created_at
+RETURNING id, short_path, original_url, user_id, created_at, deleted_at
 `
 
 type CreateShortURLParams struct {
@@ -30,12 +30,14 @@ func (q *Queries) CreateShortURL(ctx context.Context, arg CreateShortURLParams) 
 		&i.OriginalURL,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const deleteShortURL = `-- name: DeleteShortURL :exec
-DELETE FROM short_urls
+UPDATE short_urls
+SET deleted_at = CURRENT_TIMESTAMP
 WHERE id = ?
 `
 
@@ -45,9 +47,9 @@ func (q *Queries) DeleteShortURL(ctx context.Context, id int64) error {
 }
 
 const getShortURLByID = `-- name: GetShortURLByID :one
-SELECT id, short_path, original_url, user_id, created_at
+SELECT id, short_path, original_url, user_id, created_at, deleted_at
 FROM short_urls
-WHERE id = ?
+WHERE id = ? AND deleted_at IS NULL
 `
 
 func (q *Queries) GetShortURLByID(ctx context.Context, id int64) (ShortUrl, error) {
@@ -59,14 +61,15 @@ func (q *Queries) GetShortURLByID(ctx context.Context, id int64) (ShortUrl, erro
 		&i.OriginalURL,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getShortURLByPath = `-- name: GetShortURLByPath :one
-SELECT id, short_path, original_url, user_id, created_at
+SELECT id, short_path, original_url, user_id, created_at, deleted_at
 FROM short_urls
-WHERE short_path = ?
+WHERE short_path = ? AND deleted_at IS NULL
 `
 
 func (q *Queries) GetShortURLByPath(ctx context.Context, shortPath string) (ShortUrl, error) {
@@ -78,16 +81,18 @@ func (q *Queries) GetShortURLByPath(ctx context.Context, shortPath string) (Shor
 		&i.OriginalURL,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listAllShortURLs = `-- name: ListAllShortURLs :many
 SELECT
-    su.id, su.short_path, su.original_url, su.user_id, su.created_at,
+    su.id, su.short_path, su.original_url, su.user_id, su.created_at, su.deleted_at,
     (SELECT COUNT(*) FROM url_clicks uc WHERE uc.short_url_id = su.id) AS total_clicks
 FROM short_urls su
 JOIN users u ON su.user_id = u.id
+WHERE su.deleted_at IS NULL
 ORDER BY su.created_at DESC
 `
 
@@ -111,6 +116,7 @@ func (q *Queries) ListAllShortURLs(ctx context.Context) ([]ListAllShortURLsRow, 
 			&i.ShortUrl.OriginalURL,
 			&i.ShortUrl.UserID,
 			&i.ShortUrl.CreatedAt,
+			&i.ShortUrl.DeletedAt,
 			&i.TotalClicks,
 		); err != nil {
 			return nil, err
@@ -128,10 +134,10 @@ func (q *Queries) ListAllShortURLs(ctx context.Context) ([]ListAllShortURLsRow, 
 
 const listShortURLsByUserID = `-- name: ListShortURLsByUserID :many
 SELECT
-    su.id, su.short_path, su.original_url, su.user_id, su.created_at,
+    su.id, su.short_path, su.original_url, su.user_id, su.created_at, su.deleted_at,
     (SELECT COUNT(*) FROM url_clicks uc WHERE uc.short_url_id = su.id) AS total_clicks
 FROM short_urls su
-WHERE su.user_id = ?
+WHERE su.user_id = ? AND su.deleted_at IS NULL
 ORDER BY su.created_at DESC
 `
 
@@ -155,6 +161,7 @@ func (q *Queries) ListShortURLsByUserID(ctx context.Context, userID int64) ([]Li
 			&i.ShortUrl.OriginalURL,
 			&i.ShortUrl.UserID,
 			&i.ShortUrl.CreatedAt,
+			&i.ShortUrl.DeletedAt,
 			&i.TotalClicks,
 		); err != nil {
 			return nil, err

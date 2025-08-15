@@ -13,7 +13,7 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (username, password_hash, permissions)
 VALUES (?, ?, ?)
-RETURNING id, username, password_hash, permissions, telegram_chat_id, created_at
+RETURNING id, username, password_hash, permissions, telegram_chat_id, created_at, deleted_at
 `
 
 type CreateUserParams struct {
@@ -32,14 +32,26 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Permissions,
 		&i.TelegramChatID,
 		&i.CreatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
-const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, password_hash, permissions, telegram_chat_id, created_at
-FROM users
+const deleteUser = `-- name: DeleteUser :exec
+UPDATE users
+SET deleted_at = CURRENT_TIMESTAMP
 WHERE id = ?
+`
+
+func (q *Queries) DeleteUser(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteUser, id)
+	return err
+}
+
+const getUserByID = `-- name: GetUserByID :one
+SELECT id, username, password_hash, permissions, telegram_chat_id, created_at, deleted_at
+FROM users
+WHERE id = ? AND deleted_at IS NULL
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
@@ -52,14 +64,15 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 		&i.Permissions,
 		&i.TelegramChatID,
 		&i.CreatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getUserByTelegramID = `-- name: GetUserByTelegramID :one
-SELECT id, username, password_hash, permissions, telegram_chat_id, created_at
+SELECT id, username, password_hash, permissions, telegram_chat_id, created_at, deleted_at
 FROM users
-WHERE telegram_chat_id = ?
+WHERE telegram_chat_id = ? AND deleted_at IS NULL
 `
 
 func (q *Queries) GetUserByTelegramID(ctx context.Context, telegramChatID sql.NullInt64) (User, error) {
@@ -72,14 +85,15 @@ func (q *Queries) GetUserByTelegramID(ctx context.Context, telegramChatID sql.Nu
 		&i.Permissions,
 		&i.TelegramChatID,
 		&i.CreatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, password_hash, permissions, telegram_chat_id, created_at
+SELECT id, username, password_hash, permissions, telegram_chat_id, created_at, deleted_at
 FROM users
-WHERE username = ?
+WHERE username = ? AND deleted_at IS NULL
 `
 
 func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User, error) {
@@ -92,6 +106,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.Permissions,
 		&i.TelegramChatID,
 		&i.CreatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
