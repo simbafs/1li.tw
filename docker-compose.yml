@@ -1,0 +1,8 @@
+services:
+    server:
+        image: ghcr.io/simbafs/1li.tw:latest
+        container_name: 1litw
+        volumes:
+            - ./data:/app/data
+        ports:
+            - 8080:8080

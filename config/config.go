@@ -21,7 +21,7 @@ func LoadConfig() (*Config, error) {
 	godotenv.Load()
 
 	return &Config{
-		DBPath:      getEnv("DB_PATH", "1li.db"),
+		DBPath:      getEnv("DB_PATH", "data/1li.db"),
 		BotToken:    getEnv("BOT_TOKEN", ""),
 		JWTSecret:   getEnv("JWT_SECRET", "a-very-secret-key"),
 		ServerPort:  getEnv("SERVER_PORT", "8080"),
