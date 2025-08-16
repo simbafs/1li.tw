@@ -29,11 +29,13 @@ jobs:
             - name: echo
               run: echo ${{ steps.vars.outputs.tag }}
 
-            - name: build image
-              run: |
-                  docker build . -t ghcr.io/simbafs/1litw:latest -t ghcr.io/simbafs/1litw:${{ steps.vars.outputs.tag }}
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
 
-            - name: push image
-              run: |
-                  docker push ghcr.io/simbafs/1litw:${{ steps.vars.outputs.tag }}
-                  docker push ghcr.io/simbafs/1litw:latest
+            - name: Build and push
+              uses: docker/build-push-action@v6
+              with:
+                  push: true
+                  tags: |
+                      ghcr.io/simbafs/1li.tw:latest
+                      ghcr.io/simbafs/1li.tw:${{ steps.vars.outputs.tag }}
