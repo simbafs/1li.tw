@@ -44,6 +44,7 @@ const { title, center = false, className } = Astro.props
 			</aside>
 		</footer>
 		<script>
+			import { API_URL, BASE } from '../lib/api'
 			import { canManageUsers } from '../lib/permissions'
 			document.addEventListener('DOMContentLoaded', () => {
 				const userStr = localStorage.getItem('user')
@@ -78,6 +79,21 @@ const { title, center = false, className } = Astro.props
 					}
 				}
 			})
+
+			fetch(`${API_URL}/me`, {
+				credentials: 'include',
+			})
+				.then(res => res.json())
+				.then(user => {
+					console.log(user)
+					localStorage.setItem(
+						'user',
+						JSON.stringify({
+							username: user.Username,
+							permissions: user.Permissions,
+						}),
+					)
+				})
 		</script>
 	</body>
 </html>

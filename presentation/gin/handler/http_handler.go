@@ -271,3 +271,14 @@ func (h *UserHandler) Delete(c *gin.Context) {
 
 	c.Status(http.StatusNoContent)
 }
+
+func (h *UserHandler) GetMe(c *gin.Context) {
+	user, exists := c.Get("user")
+	if !exists {
+		log.Println(user, exists)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user.(*domain.User))
+}

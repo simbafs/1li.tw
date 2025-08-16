@@ -46,8 +46,11 @@ func SetupRouter(db *sql.DB, jwtSecret string, webDist embed.FS) *gin.Engine {
 		// Telegram linking endpoint is authenticated
 
 		// Authenticated routes
-		authRequired := api.Group("/").Use(handler.AuthMiddleware(jwtSecret, userUseCase))
 		{
+			authRequired := api.Use(handler.AuthMiddleware(jwtSecret, userUseCase))
+
+			authRequired.GET("/me", userHandler.GetMe)
+
 			authRequired.POST("/auth/telegram/link", authHandler.LinkTelegram)
 
 			authRequired.GET("/url", urlHandler.GetMyURLs)
