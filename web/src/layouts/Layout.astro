@@ -80,7 +80,7 @@ const { title, center = false, className } = Astro.props
 				}
 			})
 
-			fetch(`${API_URL}/me`, {
+			fetch(`${API_URL()}/me`, {
 				credentials: 'include',
 			})
 				.then(res => res.json())

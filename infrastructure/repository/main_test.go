@@ -8,16 +8,19 @@ import (
 	"testing"
 
 	"1litw/sqlc"
-	_ "github.com/mattn/go-sqlite3"
+
+	_ "modernc.org/sqlite"
 )
 
-var testQueries *sqlc.Queries
-var testDB *sql.DB
+var (
+	testQueries *sqlc.Queries
+	testDB      *sql.DB
+)
 
 func TestMain(m *testing.M) {
 	var err error
 	// Use in-memory SQLite database for testing
-	testDB, err = sql.Open("sqlite3", ":memory:")
+	testDB, err = sql.Open("sqlite", ":memory:")
 	if err != nil {
 		log.Fatalf("could not connect to database: %v", err)
 	}

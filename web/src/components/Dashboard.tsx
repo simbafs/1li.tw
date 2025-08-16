@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getUrls, deleteUrl, BASE } from '../lib/api'
+import { getUrls, deleteUrl } from '../lib/api'
 import { AddUrlForm } from './AddUrlForm'
 import { canDeleteOwn, canViewOwnStats } from '../lib/permissions'
 import type { User } from '../hooks/useUser'

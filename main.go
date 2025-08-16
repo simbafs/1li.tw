@@ -10,13 +10,13 @@ import (
 	"1litw/config"
 	"1litw/domain"
 	"1litw/infrastructure/external"
+	"1litw/infrastructure/processor"
 	"1litw/infrastructure/repository"
 	"1litw/infrastructure/telegram"
 	"1litw/presentation/gin"
-	"1litw/infrastructure/processor"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 //go:embed all:web/dist
@@ -33,7 +33,7 @@ func main() {
 	}
 
 	// Open database connection
-	db, err := sql.Open("sqlite3", cfg.DBPath+"?_foreign_keys=on")
+	db, err := sql.Open("sqlite", cfg.DBPath+"?_foreign_keys=on")
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
@@ -131,4 +131,3 @@ func startTelegramBot(cfg *config.Config, db *sql.DB) {
 	botHandler := telegram.NewBotHandler(bot, urlUseCase, userUseCase, db, baseURL)
 	botHandler.Start()
 }
-

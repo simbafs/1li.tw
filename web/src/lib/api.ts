@@ -1,9 +1,9 @@
-export const BASE = import.meta.env.PROD ? '' : 'http://localhost:8080'
-export const API_URL = `${BASE}/api`
+export const BASE = () => location.origin // TODO: is there any other solution?
+export const API_URL = () => `${BASE()}/api`
 
 // A generic fetch function
 async function fetcher(url: string, options: RequestInit = {}) {
-	const res = await fetch(`${API_URL}${url}`, {
+	const res = await fetch(`${API_URL()}${url}`, {
 		...options,
 		headers: {
 			'Content-Type': 'application/json',

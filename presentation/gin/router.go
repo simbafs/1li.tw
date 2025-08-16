@@ -45,7 +45,7 @@ func SetupRouter(db *sql.DB, jwtSecret string, webDist embed.FS) *gin.Engine {
 
 		// Authenticated routes
 		{
-			authRequired := api.Use(handler.AuthMiddleware(jwtSecret, userUseCase))
+			authRequired := api.Group("/").Use(handler.AuthMiddleware(jwtSecret, userUseCase))
 
 			authRequired.GET("/me", userHandler.GetMe)
 

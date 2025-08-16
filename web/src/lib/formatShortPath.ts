@@ -1,5 +1,5 @@
 import { BASE } from './api'
 
 export function formatShortPath(shortPath: string) {
-    return `${BASE}/r/${shortPath}`
+    return `${BASE()}/r/${shortPath}`
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { BASE, createUrl } from '../lib/api'
+import { createUrl } from '../lib/api'
 import { canCreateAny, canCreatePrefix } from '../lib/permissions'
 import { Input } from './Input'
 import { useUser } from '../hooks/useUser'
@@ -39,7 +39,7 @@ export function AddUrlForm({ canCollapse = false }: { canCollapse?: boolean }) {
 				...(customPath && { custom_path: path }),
 			})
 			setSuccess(`Success! Short URL is: ${formatShortPath(data.ShortPath)}`)
-			setOriginalUrl('')
+			setOriginalUrl('https://')
 			setCustomPath('')
 		} catch (err: any) {
 			setError(err.info?.message || 'Failed to create short URL.')
