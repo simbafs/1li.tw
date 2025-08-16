@@ -118,47 +118,6 @@ func (uc *UserUseCase) GetUserByTelegramID(ctx context.Context, telegramID int64
 // 	return uc.repo.Update(ctx, user)
 // }
 
-func (uc *UserUseCase) UpdateUserRole(ctx context.Context, operatorID int64, targetUserID int64, newRole string) error {
-	operator, err := uc.repo.GetByID(ctx, operatorID)
-	if err != nil {
-		return err
-	}
-
-	if operator == nil {
-		return ErrUserNotFound
-	}
-
-	if !operator.Permissions.Has(domain.PermUserManage) {
-		return errors.New("no permission to manage users")
-	}
-
-	targetUser, err := uc.repo.GetByID(ctx, targetUserID)
-	if err != nil {
-		return err
-	}
-	if targetUser == nil {
-		return ErrUserNotFound
-	}
-
-	var newPerm domain.Permission
-	switch newRole {
-	case "guest":
-		newPerm = domain.RoleGuest
-	case "regular":
-		newPerm = domain.RoleRegular
-	case "privileged":
-		newPerm = domain.RolePrivileged
-	case "editor":
-		newPerm = domain.RoleEditor
-	case "admin":
-		newPerm = domain.RoleAdmin
-	default:
-		return errors.New("invalid role specified")
-	}
-
-	return uc.repo.UpdatePermissions(ctx, operator.ID, newPerm)
-}
-
 func (uc *UserUseCase) List(ctx context.Context, operator *domain.User) ([]*domain.User, error) {
 	if !operator.Permissions.Has(domain.PermUserManage) {
 		return nil, ErrPermissionDenied
@@ -177,6 +136,10 @@ func (uc *UserUseCase) List(ctx context.Context, operator *domain.User) ([]*doma
 }
 
 func (uc *UserUseCase) UpdatePermissions(ctx context.Context, operator *domain.User, targetID int64, permissions domain.Permission) error {
+	if targetID == domain.AnonymousID {
+		return ErrPermissionDenied
+	}
+
 	isSelf := operator.ID == targetID
 	canManageOther := operator.Permissions.Has(domain.PermUserManage)
 
@@ -188,6 +151,10 @@ func (uc *UserUseCase) UpdatePermissions(ctx context.Context, operator *domain.U
 }
 
 func (uc *UserUseCase) Delete(ctx context.Context, operator *domain.User, targetID int64) error {
+	if targetID == domain.AnonymousID {
+		return ErrPermissionDenied
+	}
+
 	isSelf := operator.ID == targetID
 	canManageOther := operator.Permissions.Has(domain.PermUserManage)
 

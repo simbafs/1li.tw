@@ -31,3 +31,5 @@ type UserRepository interface {
 	UpdatePermissions(ctx context.Context, userID int64, permissions Permission) error
 	Delete(ctx context.Context, userID int64) error
 }
+
+const AnonymousID = 1
