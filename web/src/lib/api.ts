@@ -25,18 +25,47 @@ async function fetcher(url: string, options: RequestInit = {}) {
 }
 
 // Auth APIs
-export const login = (data: any) => fetcher(`/auth/login`, { method: 'POST', body: JSON.stringify(data) })
-export const register = (data: any) => fetcher(`/auth/register`, { method: 'POST', body: JSON.stringify(data) })
+export const login = (data: any) =>
+	fetcher(`/auth/login`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+	})
+export const register = (data: any) =>
+	fetcher(`/auth/register`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+	})
 export const linkTelegram = (token: string) =>
-	fetcher(`/auth/telegram/link`, { method: 'POST', body: JSON.stringify({ token }) })
+	fetcher(`/auth/telegram/link`, {
+		method: 'POST',
+		body: JSON.stringify({ token }),
+	})
 
 // URL APIs
 export const getUrls = () => fetcher(`/url`)
 export const createUrl = (data: { original_url: string; custom_path?: string }) =>
 	fetcher(`/url`, { method: 'POST', body: JSON.stringify(data) })
-export const deleteUrl = (id: number) => fetcher(`/url/${id}`, { method: 'DELETE' })
+export const deleteUrl = (id: number) =>
+	fetcher(`/url/${id}`, {
+		method: 'DELETE',
+	})
 export const getUrlStats = (id: number) => fetcher(`/url/${id}/stats`)
 
 // Admin APIs
 export const adminGetUrls = () => fetcher(`/admin/urls`)
-export const adminDeleteUrl = (id: number) => fetcher(`/admin/urls/${id}`, { method: 'DELETE' })
+export const adminDeleteUrl = (id: number) =>
+	fetcher(`/admin/urls/${id}`, {
+		method: 'DELETE',
+	})
+
+// User Manage APIs
+export const listUsers = () => fetcher('/user')
+export const updateUserPermission = (id: number, permission: number) =>
+	fetcher(`/user/${id}/permission`, {
+		method: 'PUT',
+		body: JSON.stringify({ permission }),
+	})
+export const deleteUser = (id: number) =>
+	fetcher(`/user/${id}`, {
+		method: 'DELETE',
+	})

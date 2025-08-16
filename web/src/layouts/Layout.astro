@@ -44,6 +44,7 @@ const { title, center = false, className } = Astro.props
 			</aside>
 		</footer>
 		<script>
+			import { canManageUsers } from '../lib/permissions'
 			document.addEventListener('DOMContentLoaded', () => {
 				const userStr = localStorage.getItem('user')
 				const navMenu = document.getElementById('nav-menu')!
@@ -52,9 +53,15 @@ const { title, center = false, className } = Astro.props
 					try {
 						const user = JSON.parse(userStr)
 						if (user && user.username) {
+							let adminLink = ''
+							if (canManageUsers(user.permissions)) {
+								adminLink = '<li><a class="btn btn-ghost" href="/admin/user">User Management</a></li>'
+							}
+
 							navMenu.innerHTML = `
                                 <ul class="menu menu-horizontal px-1 gap-2">
                                     <li><a class="btn btn-ghost" href="/dashboard">Dashboard</a></li>
+									${adminLink}
                                     <li><button class="btn btn-ghost" id="logout-btn">Logout</button></li>
                                 </ul>
                             `

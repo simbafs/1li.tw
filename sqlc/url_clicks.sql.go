@@ -230,6 +230,7 @@ func (q *Queries) GetClickStatsByTime(ctx context.Context, arg GetClickStatsByTi
 }
 
 const getUnprocessedClicks = `-- name: GetUnprocessedClicks :many
+
 SELECT id, ip_address
 FROM url_clicks
 WHERE is_processed = FALSE AND ip_address IS NOT NULL AND ip_address != ''
@@ -241,6 +242,7 @@ type GetUnprocessedClicksRow struct {
 	IPAddress sql.NullString `json:"ip_address"`
 }
 
+// TODO: Add query to get other stats
 func (q *Queries) GetUnprocessedClicks(ctx context.Context, limit int64) ([]GetUnprocessedClicksRow, error) {
 	rows, err := q.db.QueryContext(ctx, getUnprocessedClicks, limit)
 	if err != nil {

@@ -45,15 +45,9 @@ func (uc *TelegramUseCase) VerifyAndLink(ctx context.Context, token string, user
 		return ErrTokenExpired
 	}
 
-	// 4. Get the user and update their Telegram ID
-	user, err := uc.userRepo.GetByID(ctx, userID)
-	if err != nil {
-		return err
-	}
-	if user == nil {
-		return ErrUserNotFound
-	}
+	// TODO: check if there is error
+	// TODO: check if user exists
+	// TODO: check if other user already has this TelegramChatID
 
-	user.TelegramChatID = authToken.TelegramChatID
-	return uc.userRepo.Update(ctx, user)
+	return uc.userRepo.UpdateTelegramID(ctx, userID, authToken.TelegramChatID)
 }

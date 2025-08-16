@@ -26,5 +26,8 @@ type UserRepository interface {
 	GetByUsername(ctx context.Context, username string) (*User, error)
 	GetByID(ctx context.Context, id int64) (*User, error)
 	GetByTelegramID(ctx context.Context, telegramID int64) (*User, error)
-	Update(ctx context.Context, user *User) error
+	List(ctx context.Context) ([]*User, error)
+	UpdateTelegramID(ctx context.Context, id int64, telegramID int64) error
+	UpdatePermissions(ctx context.Context, userID int64, permissions Permission) error
+	Delete(ctx context.Context, userID int64) error
 }

@@ -15,6 +15,7 @@ var (
 	ErrUserNotFound       = errors.New("user not found")
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrUserExists         = errors.New("user with this username already exists")
+	ErrPermissionDenied   = errors.New("permission denied")
 )
 
 type UserUseCase struct {
@@ -105,19 +106,28 @@ func (uc *UserUseCase) GetUserByTelegramID(ctx context.Context, telegramID int64
 	return uc.repo.GetByTelegramID(ctx, telegramID)
 }
 
-func (uc *UserUseCase) LinkTelegram(ctx context.Context, userID int64, chatID int64) error {
-	user, err := uc.repo.GetByID(ctx, userID)
+// func (uc *UserUseCase) LinkTelegram(ctx context.Context, userID int64, chatID int64) error {
+// 	user, err := uc.repo.GetByID(ctx, userID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if user == nil {
+// 		return ErrUserNotFound
+// 	}
+// 	user.TelegramChatID = chatID
+// 	return uc.repo.Update(ctx, user)
+// }
+
+func (uc *UserUseCase) UpdateUserRole(ctx context.Context, operatorID int64, targetUserID int64, newRole string) error {
+	operator, err := uc.repo.GetByID(ctx, operatorID)
 	if err != nil {
 		return err
 	}
-	if user == nil {
+
+	if operator == nil {
 		return ErrUserNotFound
 	}
-	user.TelegramChatID = chatID
-	return uc.repo.Update(ctx, user)
-}
 
-func (uc *UserUseCase) UpdateUserRole(ctx context.Context, operator *domain.User, targetUserID int64, newRole string) error {
 	if !operator.Permissions.Has(domain.PermUserManage) {
 		return errors.New("no permission to manage users")
 	}
@@ -146,6 +156,44 @@ func (uc *UserUseCase) UpdateUserRole(ctx context.Context, operator *domain.User
 		return errors.New("invalid role specified")
 	}
 
-	targetUser.Permissions = newPerm
-	return uc.repo.Update(ctx, targetUser)
+	return uc.repo.UpdatePermissions(ctx, operator.ID, newPerm)
+}
+
+func (uc *UserUseCase) List(ctx context.Context, operator *domain.User) ([]*domain.User, error) {
+	if !operator.Permissions.Has(domain.PermUserManage) {
+		return nil, ErrPermissionDenied
+	}
+
+	users, err := uc.repo.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, user := range users {
+		user.PasswordHash = ""
+	}
+
+	return users, nil
+}
+
+func (uc *UserUseCase) UpdatePermissions(ctx context.Context, operator *domain.User, targetID int64, permissions domain.Permission) error {
+	isSelf := operator.ID == targetID
+	canManageOther := operator.Permissions.Has(domain.PermUserManage)
+
+	if !isSelf && !canManageOther {
+		return ErrPermissionDenied
+	}
+
+	return uc.repo.UpdatePermissions(ctx, targetID, permissions)
+}
+
+func (uc *UserUseCase) Delete(ctx context.Context, operator *domain.User, targetID int64) error {
+	isSelf := operator.ID == targetID
+	canManageOther := operator.Permissions.Has(domain.PermUserManage)
+
+	if !isSelf && !canManageOther {
+		return ErrPermissionDenied
+	}
+
+	return uc.repo.Delete(ctx, targetID)
 }

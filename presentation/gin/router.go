@@ -33,6 +33,7 @@ func SetupRouter(db *sql.DB, jwtSecret string, webDist embed.FS) *gin.Engine {
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(userUseCase, telegramUseCase)
 	urlHandler := handler.NewURLHandler(urlUseCase, analyticsUseCase)
+	userHandler := handler.NewUserHandler(userUseCase)
 
 	// Setup router
 	router := gin.Default()
@@ -40,23 +41,22 @@ func SetupRouter(db *sql.DB, jwtSecret string, webDist embed.FS) *gin.Engine {
 	// API routes
 	api := router.Group("/api")
 	{
-		auth := api.Group("/auth")
-		{
-			auth.POST("/register", authHandler.Register)
-			auth.POST("/login", authHandler.Login)
-			// Telegram linking endpoint is authenticated
-		}
+		api.POST("/auth/register", authHandler.Register)
+		api.POST("/auth/login", authHandler.Login)
+		// Telegram linking endpoint is authenticated
 
 		// Authenticated routes
-		authRequired := api.Group("/")
-		authRequired.Use(handler.AuthMiddleware(jwtSecret, userUseCase))
+		authRequired := api.Group("/").Use(handler.AuthMiddleware(jwtSecret, userUseCase))
 		{
 			authRequired.POST("/auth/telegram/link", authHandler.LinkTelegram)
 
 			authRequired.GET("/url", urlHandler.GetMyURLs)
 			authRequired.DELETE("/url/:id", urlHandler.DeleteShortURL)
 			authRequired.GET("/url/:id/stats", urlHandler.GetStats)
-			// Admin routes would be nested here with another middleware
+
+			authRequired.GET("/user", userHandler.List)
+			authRequired.PUT("/user/:id/permission", userHandler.UpdatePermissions)
+			authRequired.DELETE("/user/:id", userHandler.Delete)
 		}
 
 		// URL creation can be done by anonymous users

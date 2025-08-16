@@ -32,3 +32,9 @@ WHERE id = ?;
 UPDATE users
 SET deleted_at = CURRENT_TIMESTAMP
 WHERE id = ?;
+
+-- name: ListUsers :many
+SELECT * 
+FROM users
+WHERE deleted_at IS NULL
+ORDER BY permissions DESC, id ASC;

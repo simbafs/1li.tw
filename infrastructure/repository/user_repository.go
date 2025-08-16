@@ -78,6 +78,41 @@ func (r *userRepository) GetByTelegramID(ctx context.Context, telegramID int64) 
 		}
 		return nil, err
 	}
+	return toDomainUser(user), nil
+}
+
+func (r *userRepository) List(ctx context.Context) ([]*domain.User, error) {
+	users, err := r.queries.ListUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*domain.User
+	for _, user := range users {
+		result = append(result, toDomainUser(user))
+	}
+	return result, nil
+}
+
+func (r *userRepository) UpdateTelegramID(ctx context.Context, id int64, telegramID int64) error {
+	return r.queries.UpdateUserTelegramID(ctx, sqlc.UpdateUserTelegramIDParams{
+		ID:             id,
+		TelegramChatID: sql.NullInt64{Int64: telegramID, Valid: true},
+	})
+}
+
+func (r *userRepository) UpdatePermissions(ctx context.Context, userID int64, permissions domain.Permission) error {
+	return r.queries.UpdateUserPermissions(ctx, sqlc.UpdateUserPermissionsParams{
+		ID:          userID,
+		Permissions: int64(permissions),
+	})
+}
+
+func (r *userRepository) Delete(ctx context.Context, userID int64) error {
+	return r.queries.DeleteUser(ctx, userID)
+}
+
+func toDomainUser(user sqlc.User) *domain.User {
 	return &domain.User{
 		ID:             user.ID,
 		Username:       user.Username,
@@ -85,25 +120,5 @@ func (r *userRepository) GetByTelegramID(ctx context.Context, telegramID int64) 
 		Permissions:    domain.Permission(user.Permissions),
 		TelegramChatID: user.TelegramChatID.Int64,
 		CreatedAt:      user.CreatedAt,
-	}, nil
-}
-
-func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
-	// The current domain interface is simple. We only support updating telegram ID and permissions.
-	// A more complex implementation might need to update other fields.
-	if user.TelegramChatID != 0 {
-		err := r.queries.UpdateUserTelegramID(ctx, sqlc.UpdateUserTelegramIDParams{
-			ID:             user.ID,
-			TelegramChatID: sql.NullInt64{Int64: user.TelegramChatID, Valid: true},
-		})
-		if err != nil {
-			return err
-		}
 	}
-
-	err := r.queries.UpdateUserPermissions(ctx, sqlc.UpdateUserPermissionsParams{
-		ID:          user.ID,
-		Permissions: int64(user.Permissions),
-	})
-	return err
 }
