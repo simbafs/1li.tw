@@ -3,9 +3,6 @@ package gin
 import (
 	"database/sql"
 	"embed"
-	"io/fs"
-	"net/http"
-	"strings"
 
 	"1litw/application"
 	"1litw/infrastructure/external"
@@ -13,6 +10,7 @@ import (
 	"1litw/presentation/gin/handler"
 
 	"github.com/gin-gonic/gin"
+	"github.com/simbafs/kama"
 )
 
 func SetupRouter(db *sql.DB, jwtSecret string, webDist embed.FS) *gin.Engine {
@@ -67,8 +65,8 @@ func SetupRouter(db *sql.DB, jwtSecret string, webDist embed.FS) *gin.Engine {
 	}
 
 	// Redirection routes
-	router.GET("/:short_path", urlHandler.Redirect)
-	router.GET("/@:username/:custom_path", func(c *gin.Context) {
+	router.GET("/r/:short_path", urlHandler.Redirect)
+	router.GET("/r/@:username/:custom_path", func(c *gin.Context) {
 		username := c.Param("username")
 		customPath := c.Param("custom_path")
 		fullPath := "@" + username + "/" + customPath
@@ -76,42 +74,13 @@ func SetupRouter(db *sql.DB, jwtSecret string, webDist embed.FS) *gin.Engine {
 		urlHandler.Redirect(c)
 	})
 
-	// Serve frontend
-	distFS, err := fs.Sub(webDist, "web/dist")
-	if err != nil {
-		panic(err)
-	}
+	k := kama.New(webDist,
+		kama.WithDevServer("http://localhost:4321"),
+		// kama.WithTree("/tree"),
+		kama.WithPath("web/dist"),
+	)
 
-	// Serve static assets from the /assets directory
-	router.StaticFS("/assets", http.FS(distFS))
-
-	// For all other routes, serve the index.html, letting the client-side router take over.
-	// This is for SPAs. Since Astro can be an MPA, we need to be more specific.
-	router.NoRoute(func(c *gin.Context) {
-		// If it's not an API route and not a file, serve the corresponding html file or the index.html
-		if !strings.HasPrefix(c.Request.URL.Path, "/api") {
-			// Try to serve the file directly from the embed FS
-			// e.g. /dashboard -> /dashboard/index.html
-			filePath := c.Request.URL.Path
-			if strings.HasSuffix(filePath, "/") {
-				filePath = filePath + "index.html"
-			} else if !strings.Contains(filePath, ".") {
-				// This is a heuristic. If there's no dot, it's likely a page route.
-				// Astro builds pages as /pagename/index.html
-				filePath = filePath + "/index.html"
-			}
-
-			// Serve the file if it exists
-			if _, err := distFS.Open(strings.TrimPrefix(filePath, "/")); err == nil {
-				c.FileFromFS(filePath, http.FS(distFS))
-				return
-			}
-
-			// Fallback to root index.html for true SPAs or as a default
-			c.FileFromFS("/", http.FS(distFS))
-		}
-		// If it's an API route that doesn't match, Gin will handle the 404
-	})
+	router.Use(k.Gin())
 
 	return router
 }

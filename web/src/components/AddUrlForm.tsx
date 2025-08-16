@@ -3,6 +3,7 @@ import { BASE, createUrl } from '../lib/api'
 import { canCreateAny, canCreatePrefix } from '../lib/permissions'
 import { Input } from './Input'
 import { useUser } from '../hooks/useUser'
+import { formatShortPath } from '../lib/formatShortPath'
 
 export function AddUrlForm({ canCollapse = false }: { canCollapse?: boolean }) {
 	const [collapsed, setCollapsed] = useState(canCollapse)
@@ -37,7 +38,7 @@ export function AddUrlForm({ canCollapse = false }: { canCollapse?: boolean }) {
 				original_url: originalUrl,
 				...(customPath && { custom_path: path }),
 			})
-			setSuccess(`Success! Short URL is: ${BASE}/${data.ShortPath}`)
+			setSuccess(`Success! Short URL is: ${formatShortPath(data.ShortPath)}`)
 			setOriginalUrl('')
 			setCustomPath('')
 		} catch (err: any) {

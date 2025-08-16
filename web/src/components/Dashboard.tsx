@@ -3,6 +3,7 @@ import { getUrls, deleteUrl, BASE } from '../lib/api'
 import { AddUrlForm } from './AddUrlForm'
 import { canDeleteOwn, canViewOwnStats } from '../lib/permissions'
 import type { User } from '../hooks/useUser'
+import { formatShortPath } from '../lib/formatShortPath'
 
 interface Url {
 	ID: number
@@ -100,7 +101,7 @@ export function Dashboard() {
 							<tr key={url.ID}>
 								<td>
 									<a
-										href={`${BASE}/${url.ShortPath}`}
+										href={formatShortPath(url.ShortPath)}
 										target="_blank"
 										rel="noopener noreferrer"
 										className="link link-primary"
