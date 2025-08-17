@@ -35,10 +35,7 @@ export function AddUrlForm({ canCollapse = false }: { canCollapse?: boolean }) {
 		}
 
 		try {
-			const data = await createUrl({
-				original_url: originalUrl,
-				...(customPath && { custom_path: path }),
-			})
+			const data = await createUrl(originalUrl, customPath ? path : undefined)
 			setSuccess(`Success! Short URL is: ${formatShortPath(data.ShortPath)}`)
 			setOriginalUrl('https://')
 			setCustomPath('')

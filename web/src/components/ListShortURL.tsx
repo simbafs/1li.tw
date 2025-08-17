@@ -4,16 +4,8 @@ import { formatShortPath } from '../lib/formatShortPath'
 import { toast } from 'react-toastify'
 import type { User } from '../hooks/useUser'
 import useSWR from 'swr'
-import { useEffect, useState } from 'react'
-
-// format date to YYYY/MM/DD format
-function formatDate(dateString: string): string {
-	const date = new Date(dateString)
-	const year = date.getFullYear()
-	const month = String(date.getMonth() + 1).padStart(2, '0') // Months are zero-based
-	const day = String(date.getDate()).padStart(2, '0')
-	return `${year}/${month}/${day}`
-}
+import { useState } from 'react'
+import { formatDate } from '../lib/formatDate'
 
 export function ListShortURL({ user }: { user: User }) {
 	const [showOthers, setShowOthers] = useState(false)
@@ -22,8 +14,6 @@ export function ListShortURL({ user }: { user: User }) {
 		error,
 		mutate,
 	} = useSWR<URL[]>(['list-urls', showOthers], ([, showOthers]) => (showOthers ? adminGetUrls : getUrls)())
-
-	useEffect(() => console.log(urls), [urls])
 
 	const handleDelete = async (id: number) => {
 		if (window.confirm('Are you sure you want to delete this URL?')) {

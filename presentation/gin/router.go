@@ -35,37 +35,31 @@ func SetupRouter(db *sql.DB, jwtSecret string, webDist embed.FS) *gin.Engine {
 
 	// Setup router
 	router := gin.Default()
+	authed := router.Group("/").Use(handler.AuthMiddleware(jwtSecret, userUseCase))
 
 	// API routes
-	api := router.Group("/api")
-	{
-		api.POST("/auth/register", authHandler.Register)
-		api.POST("/auth/login", authHandler.Login)
-		api.POST("/auth/logout", authHandler.Logout)
-		// Telegram linking endpoint is authenticated
+	// routes about authentication
+	router.POST("/api/auth/register", authHandler.Register)
+	router.POST("/api/auth/login", authHandler.Login)
+	router.POST("/api/auth/logout", authHandler.Logout)
+	authed.POST("/api/auth/telegram/link", authHandler.LinkTelegram)
 
-		// Authenticated routes
-		{
-			authRequired := api.Group("/").Use(handler.AuthMiddleware(jwtSecret, userUseCase))
+	// route about user itself
+	authed.GET("/api/me", userHandler.GetMe)
 
-			authRequired.GET("/me", userHandler.GetMe)
+	// routes about a short URL
+	router.POST("/api/url", handler.OptionalAuthMiddleware(jwtSecret, userUseCase), urlHandler.CreateShortURL)
+	authed.GET("/api/url", urlHandler.GetMyURLs)
+	authed.DELETE("/api/url/:id", urlHandler.DeleteShortURL)
+	authed.GET("/api/url/:id/stats", urlHandler.GetStats)
 
-			authRequired.POST("/auth/telegram/link", authHandler.LinkTelegram)
+	// routes about managge users
+	authed.GET("/api/user", userHandler.List)
+	authed.PUT("/api/user/:id/permission", userHandler.UpdatePermissions)
+	authed.DELETE("/api/user/:id", userHandler.Delete)
 
-			authRequired.GET("/url", urlHandler.GetMyURLs)
-			authRequired.DELETE("/url/:id", urlHandler.DeleteShortURL)
-			authRequired.GET("/url/:id/stats", urlHandler.GetStats)
-
-			authRequired.GET("/user", userHandler.List)
-			authRequired.PUT("/user/:id/permission", userHandler.UpdatePermissions)
-			authRequired.DELETE("/user/:id", userHandler.Delete)
-
-			authRequired.GET("/admin/urls", urlHandler.GetAllURLs)
-		}
-
-		// URL creation can be done by anonymous users
-		api.POST("/url", handler.OptionalAuthMiddleware(jwtSecret, userUseCase), urlHandler.CreateShortURL)
-	}
+	// routes about admin
+	authed.GET("/api/admin/url", urlHandler.GetAllURLs)
 
 	// Redirection routes
 	router.GET("/r/:short_path", urlHandler.Redirect)

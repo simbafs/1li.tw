@@ -1,7 +1,5 @@
 import { useEffect } from 'react'
 import {
-	BarChart,
-	Bar,
 	LineChart,
 	Line,
 	XAxis,
