@@ -4,6 +4,7 @@ import { canCreateAny, canCreatePrefix } from '../lib/permissions'
 import { Input } from './Input'
 import { useUser } from '../hooks/useUser'
 import { formatShortPath } from '../lib/formatShortPath'
+import { mutate } from 'swr'
 
 export function AddUrlForm({ canCollapse = false }: { canCollapse?: boolean }) {
 	const [collapsed, setCollapsed] = useState(canCollapse)
@@ -41,6 +42,7 @@ export function AddUrlForm({ canCollapse = false }: { canCollapse?: boolean }) {
 			setSuccess(`Success! Short URL is: ${formatShortPath(data.ShortPath)}`)
 			setOriginalUrl('https://')
 			setCustomPath('')
+			mutate(['list-urls', false])
 		} catch (err: any) {
 			setError(err.info?.message || 'Failed to create short URL.')
 		}

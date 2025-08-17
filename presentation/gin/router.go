@@ -41,6 +41,7 @@ func SetupRouter(db *sql.DB, jwtSecret string, webDist embed.FS) *gin.Engine {
 	{
 		api.POST("/auth/register", authHandler.Register)
 		api.POST("/auth/login", authHandler.Login)
+		api.POST("/auth/logout", authHandler.Logout)
 		// Telegram linking endpoint is authenticated
 
 		// Authenticated routes
@@ -58,6 +59,8 @@ func SetupRouter(db *sql.DB, jwtSecret string, webDist embed.FS) *gin.Engine {
 			authRequired.GET("/user", userHandler.List)
 			authRequired.PUT("/user/:id/permission", userHandler.UpdatePermissions)
 			authRequired.DELETE("/user/:id", userHandler.Delete)
+
+			authRequired.GET("/admin/urls", urlHandler.GetAllURLs)
 		}
 
 		// URL creation can be done by anonymous users

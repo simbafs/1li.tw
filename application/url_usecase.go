@@ -177,6 +177,10 @@ func (uc *URLUseCase) GetByPath(ctx context.Context, path string) (*domain.Short
 	return uc.urlRepo.GetByPath(ctx, path)
 }
 
+func (uc *URLUseCase) GetAllURLs(ctx context.Context) ([]domain.ShortURLWithUser, error) {
+	return uc.urlRepo.ListAllURLsWithUser(ctx)
+}
+
 func (uc *URLUseCase) RecordClick(ctx context.Context, shortURLID int64, userAgent string, ipAddress string) {
 	go func() {
 		uaResult := uc.uaParser.Parse(userAgent)

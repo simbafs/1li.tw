@@ -34,3 +34,15 @@ FROM short_urls su
 JOIN users u ON su.user_id = u.id
 WHERE su.deleted_at IS NULL
 ORDER BY su.created_at DESC;
+
+-- name: ListAllURLsWithUser :many
+SELECT
+    su.*,
+    u.username
+FROM
+    short_urls su
+JOIN
+    users u ON su.user_id = u.id
+WHERE su.deleted_at IS NULL
+ORDER BY
+    su.created_at DESC;

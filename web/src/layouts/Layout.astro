@@ -44,7 +44,7 @@ const { title, center = false, className } = Astro.props
 			</aside>
 		</footer>
 		<script>
-			import { API_URL } from '../lib/api'
+			import { API_URL, logout } from '../lib/api'
 			import { canManageUsers } from '../lib/permissions'
 			document.addEventListener('DOMContentLoaded', () => {
 				const userStr = localStorage.getItem('user')
@@ -67,7 +67,9 @@ const { title, center = false, className } = Astro.props
                                 </ul>
                             `
 							const logoutBtn = document.getElementById('logout-btn')!
-							logoutBtn.addEventListener('click', () => {
+							logoutBtn.addEventListener('click', async () => {
+								await logout()
+
 								localStorage.removeItem('user')
 								// Also need to call a backend endpoint to invalidate the cookie if possible
 								window.location.href = '/'

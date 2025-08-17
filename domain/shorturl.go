@@ -15,6 +15,12 @@ type ShortURL struct {
 	TotalClicks int64 // Added for presentation/API purposes
 }
 
+// ShortURLWithUser is a DTO that includes the username.
+type ShortURLWithUser struct {
+	ShortURL
+	Username string
+}
+
 // ShortURLRepository defines the interface for short URL data operations.
 type ShortURLRepository interface {
 	Create(ctx context.Context, shortURL *ShortURL) (int64, error)
@@ -23,4 +29,5 @@ type ShortURLRepository interface {
 	Delete(ctx context.Context, id int64) error
 	ListByUserID(ctx context.Context, userID int64) ([]ShortURL, error)
 	ListAll(ctx context.Context) ([]ShortURL, error)
+	ListAllURLsWithUser(ctx context.Context) ([]ShortURLWithUser, error)
 }

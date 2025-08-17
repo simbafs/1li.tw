@@ -69,6 +69,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"username": user.Username, "permissions": user.Permissions})
 }
 
+func (h *AuthHandler) Logout(c *gin.Context) {
+	c.SetCookie("jwt", "", -1, "/", "", false, true) // Clear the cookie
+	c.JSON(http.StatusOK, gin.H{"message": "logged out successfully"})
+}
+
 func (h *AuthHandler) LinkTelegram(c *gin.Context) {
 	userValue, exists := c.Get("user")
 	if !exists {
@@ -196,6 +201,26 @@ func (h *URLHandler) GetStats(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, stats)
+}
+
+func (h *URLHandler) GetAllURLs(c *gin.Context) {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	if !user.(*domain.User).Permissions.Has(domain.PermViewAnyStats) && !user.(*domain.User).Permissions.Has(domain.PermDeleteAny) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
+
+	urls, err := h.urlUseCase.GetAllURLs(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, urls)
 }
 
 type UserHandler struct {

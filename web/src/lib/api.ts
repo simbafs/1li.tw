@@ -1,6 +1,15 @@
 export const BASE = () => location.origin // TODO: is there any other solution?
 export const API_URL = () => `${BASE()}/api`
 
+export type URL = {
+	ID: number
+	ShortPath: string
+	OriginalURL: string
+	TotalClicks: number
+	CreatedAt: string
+	Username?: string // this will show in some url endpoints  // TODO: make this presistent
+}
+
 // A generic fetch function
 async function fetcher(url: string, options: RequestInit = {}) {
 	const res = await fetch(`${API_URL()}${url}`, {
@@ -29,6 +38,10 @@ export const login = (data: any) =>
 	fetcher(`/auth/login`, {
 		method: 'POST',
 		body: JSON.stringify(data),
+	})
+export const logout = () =>
+	fetcher(`/auth/logout`, {
+		method: 'POST',
 	})
 export const register = (data: any) =>
 	fetcher(`/auth/register`, {

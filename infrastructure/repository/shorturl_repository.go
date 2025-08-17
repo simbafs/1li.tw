@@ -115,3 +115,25 @@ func (r *shortURLRepository) ListAll(ctx context.Context) ([]domain.ShortURL, er
 	}
 	return urls, nil
 }
+
+func (r *shortURLRepository) ListAllURLsWithUser(ctx context.Context) ([]domain.ShortURLWithUser, error) {
+	rows, err := r.queries.ListAllURLsWithUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	urls := make([]domain.ShortURLWithUser, len(rows))
+	for i, row := range rows {
+		urls[i] = domain.ShortURLWithUser{
+			ShortURL: domain.ShortURL{
+				ID:          row.ID,
+				ShortPath:   row.ShortPath,
+				OriginalURL: row.OriginalURL,
+				UserID:      row.UserID,
+				CreatedAt:   row.CreatedAt,
+			},
+			Username: row.Username,
+		}
+	}
+	return urls, nil
+}

@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
+	"time"
 )
 
 const createShortURL = `-- name: CreateShortURL :one
@@ -118,6 +120,60 @@ func (q *Queries) ListAllShortURLs(ctx context.Context) ([]ListAllShortURLsRow, 
 			&i.ShortUrl.CreatedAt,
 			&i.ShortUrl.DeletedAt,
 			&i.TotalClicks,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllURLsWithUser = `-- name: ListAllURLsWithUser :many
+SELECT
+    su.id, su.short_path, su.original_url, su.user_id, su.created_at, su.deleted_at,
+    u.username
+FROM
+    short_urls su
+JOIN
+    users u ON su.user_id = u.id
+WHERE su.deleted_at IS NULL
+ORDER BY
+    su.created_at DESC
+`
+
+type ListAllURLsWithUserRow struct {
+	ID          int64        `json:"id"`
+	ShortPath   string       `json:"short_path"`
+	OriginalURL string       `json:"original_url"`
+	UserID      int64        `json:"user_id"`
+	CreatedAt   time.Time    `json:"created_at"`
+	DeletedAt   sql.NullTime `json:"deleted_at"`
+	Username    string       `json:"username"`
+}
+
+func (q *Queries) ListAllURLsWithUser(ctx context.Context) ([]ListAllURLsWithUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllURLsWithUser)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAllURLsWithUserRow{}
+	for rows.Next() {
+		var i ListAllURLsWithUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ShortPath,
+			&i.OriginalURL,
+			&i.UserID,
+			&i.CreatedAt,
+			&i.DeletedAt,
+			&i.Username,
 		); err != nil {
 			return nil, err
 		}
