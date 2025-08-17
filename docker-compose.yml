@@ -6,3 +6,5 @@ services:
             - ./data:/app/data
         ports:
             - 8080:8080
+        environment:
+            - JWT_SECRET=024894f50def95211e1047153cbafc7f6877d0adc712b1e56ed467a5c6bd03d6
