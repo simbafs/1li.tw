@@ -37,7 +37,7 @@ export function ListShortURL({ user }: { user: User }) {
 	}
 
 	if (error) {
-		return <div className="alert alert-error">{error}</div>
+		return <div className="alert alert-error">{error.message}</div>
 	}
 
 	if (!urls) {
