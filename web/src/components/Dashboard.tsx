@@ -27,7 +27,7 @@ export function Dashboard() {
 	}
 
 	return (
-		<div className="flex flex-col gap-8">
+		<div className="flex w-full flex-col gap-8">
 			<AddUrlForm canCollapse />
 
 			<h2 className="text-2xl font-bold">My URLs</h2>
