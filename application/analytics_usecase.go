@@ -8,12 +8,12 @@ import (
 	"1litw/domain"
 )
 
-var (
-	ErrAnalyticsNotFound = errors.New("no analytics data found for the given short URL")
-)
+var ErrAnalyticsNotFound = errors.New("no analytics data found for the given short URL")
 
 // URLStats is a composite struct holding all analytics for a URL.
 type URLStats struct {
+	URL       *domain.ShortURL         `json:"url"`
+	OwnerName string                   `json:"owner_name"`
 	Total     int64                    `json:"total"`
 	ByTime    []domain.TimeBucketCount `json:"by_time"`
 	ByCountry []domain.KeyCount        `json:"by_country"`
@@ -83,6 +83,8 @@ func (a *AnalyticsUseCase) GetOverviewByID(ctx context.Context, user *domain.Use
 	}
 
 	stats := &URLStats{
+		URL:       shortURL,
+		OwnerName: user.Username,
 		Total:     total,
 		ByTime:    byTime,
 		ByCountry: byCountry,

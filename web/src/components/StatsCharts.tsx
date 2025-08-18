@@ -11,8 +11,11 @@ import {
 	PieChart,
 	Pie,
 } from 'recharts'
+import type { URL } from '../lib/api'
 
 export type Stats = {
+	url: URL
+	owner_name: string
 	total: number
 	by_time: {
 		bucketStart: string
@@ -61,6 +64,13 @@ function DrawPieChart({
 	)
 }
 
+function ensureNoEmptyString(data: { key: string; count: number }[]) {
+	return data.map(item => ({
+		key: item.key || 'Unknown',
+		count: item.count,
+	}))
+}
+
 export function StatsCharts({ stats }: { stats: Stats }) {
 	useEffect(() => console.log(stats), [stats])
 
@@ -81,9 +91,9 @@ export function StatsCharts({ stats }: { stats: Stats }) {
 					</ResponsiveContainer>
 				</div>
 			</div>
-			<DrawPieChart title="Clicks by Country" data={stats.by_country} fill="#82ca9d" />
-			<DrawPieChart title="Clicks by OS" data={stats.by_os} fill="#8884d8" />
-			<DrawPieChart title="Clicks by Browser" data={stats.by_browser} fill="#ffc658" />
+			<DrawPieChart title="Clicks by Country" data={ensureNoEmptyString(stats.by_country)} fill="#82ca9d" />
+			<DrawPieChart title="Clicks by OS" data={ensureNoEmptyString(stats.by_os)} fill="#8884d8" />
+			<DrawPieChart title="Clicks by Browser" data={ensureNoEmptyString(stats.by_browser)} fill="#ffc658" />
 		</div>
 	)
 }
