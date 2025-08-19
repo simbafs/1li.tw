@@ -16,17 +16,20 @@ var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrUserExists         = errors.New("user with this username already exists")
 	ErrPermissionDenied   = errors.New("permission denied")
+	ErrInvalidToken       = errors.New("invalid token")
 )
 
 type UserUseCase struct {
-	repo      domain.UserRepository
-	jwtSecret string
+	jwtSecret       string
+	repo            domain.UserRepository
+	tgAuthTokenRepo domain.TGAuthTokenRepository
 }
 
-func NewUserUseCase(repo domain.UserRepository, jwtSecret string) *UserUseCase {
+func NewUserUseCase(jwtSecret string, repo domain.UserRepository, tgAuthTokenRepo domain.TGAuthTokenRepository) *UserUseCase {
 	return &UserUseCase{
-		repo:      repo,
-		jwtSecret: jwtSecret,
+		jwtSecret:       jwtSecret,
+		repo:            repo,
+		tgAuthTokenRepo: tgAuthTokenRepo,
 	}
 }
 
@@ -106,18 +109,6 @@ func (uc *UserUseCase) GetUserByTelegramID(ctx context.Context, telegramID int64
 	return uc.repo.GetByTelegramID(ctx, telegramID)
 }
 
-// func (uc *UserUseCase) LinkTelegram(ctx context.Context, userID int64, chatID int64) error {
-// 	user, err := uc.repo.GetByID(ctx, userID)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	if user == nil {
-// 		return ErrUserNotFound
-// 	}
-// 	user.TelegramChatID = chatID
-// 	return uc.repo.Update(ctx, user)
-// }
-
 func (uc *UserUseCase) List(ctx context.Context, operator *domain.User) ([]*domain.User, error) {
 	if !operator.Permissions.Has(domain.PermUserManage) {
 		return nil, ErrPermissionDenied
@@ -163,4 +154,30 @@ func (uc *UserUseCase) Delete(ctx context.Context, operator *domain.User, target
 	}
 
 	return uc.repo.Delete(ctx, targetID)
+}
+
+func (uc *UserUseCase) PrepareLinkTelegram(ctx context.Context, telegramID int64) (string, error) {
+	token, err := uc.tgAuthTokenRepo.Create(ctx, telegramID)
+	if err != nil {
+		return "", err
+	}
+
+	return token.Token, nil
+}
+
+func (uc *UserUseCase) LinkTelegram(ctx context.Context, token string, user *domain.User) error {
+	authToken, err := uc.tgAuthTokenRepo.Get(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	if authToken.ExpiresAt.Before(time.Now()) {
+		return ErrInvalidToken
+	}
+
+	if err := uc.tgAuthTokenRepo.Apply(ctx, authToken, user); err != nil {
+		return err
+	}
+
+	return nil
 }

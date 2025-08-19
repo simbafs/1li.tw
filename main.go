@@ -9,13 +9,12 @@ import (
 	"1litw/application"
 	"1litw/config"
 	"1litw/domain"
-	"1litw/infrastructure/external"
 	"1litw/infrastructure/processor"
 	"1litw/infrastructure/repository"
-	"1litw/infrastructure/telegram"
 	"1litw/presentation/gin"
+	"1litw/presentation/telegram"
+	"1litw/presentation/telegram/handler"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	_ "modernc.org/sqlite"
 )
 
@@ -56,7 +55,18 @@ func main() {
 
 	// Start Telegram Bot if token is provided
 	if cfg.BotToken != "" {
-		go startTelegramBot(cfg, db)
+		userRepo := repository.NewUserRepository(db)
+		tgAuthTokenRepo := repository.NewTGAuthTokenRepository(db)
+
+		userUseCase := application.NewUserUseCase(cfg.JWTSecret, userRepo, tgAuthTokenRepo)
+		h := handler.New(cfg, userUseCase)
+
+		bot, err := telegram.NewBot(cfg.BotToken, h)
+		if err != nil {
+			panic(err)
+		}
+
+		go bot.Run(context.TODO())
 	}
 
 	// Start server
@@ -104,30 +114,4 @@ func ensureInitialData(db *sql.DB) error {
 
 	log.Println("Database initialization complete.")
 	return nil
-}
-
-func startTelegramBot(cfg *config.Config, db *sql.DB) {
-	bot, err := tgbotapi.NewBotAPI(cfg.BotToken)
-	if err != nil {
-		log.Printf("Failed to create Telegram bot: %v", err)
-		return
-	}
-	bot.Debug = cfg.Environment == "development"
-	log.Printf("Authorized on account %s", bot.Self.UserName)
-
-	// We need to re-create dependencies here for the bot.
-	// This suggests a dependency injection container would be beneficial for a larger app.
-	userRepo := repository.NewUserRepository(db)
-	urlRepo := repository.NewShortURLRepository(db)
-	clickRepo := repository.NewClickRepository(db)
-	uaParser := external.NewUAParserService()
-	userUseCase := application.NewUserUseCase(userRepo, cfg.JWTSecret)
-	urlUseCase := application.NewURLUseCase(urlRepo, userRepo, clickRepo, uaParser)
-
-	// The base URL for links needs to be configured.
-	// For now, we'll construct it from the server port.
-	baseURL := "http://localhost:" + cfg.ServerPort
-
-	botHandler := telegram.NewBotHandler(bot, urlUseCase, userUseCase, db, baseURL)
-	botHandler.Start()
 }

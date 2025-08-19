@@ -18,18 +18,18 @@ func SetupRouter(db *sql.DB, jwtSecret string, webDist embed.FS) *gin.Engine {
 	userRepo := repository.NewUserRepository(db)
 	urlRepo := repository.NewShortURLRepository(db)
 	analyticsRepo := repository.NewClickRepository(db)
+	tgAuthTokenRepo := repository.NewTGAuthTokenRepository(db)
 
 	// Initialize external services
 	uaParser := external.NewUAParserService()
 
 	// Initialize use cases
-	userUseCase := application.NewUserUseCase(userRepo, jwtSecret)
+	userUseCase := application.NewUserUseCase(jwtSecret, userRepo, tgAuthTokenRepo)
 	urlUseCase := application.NewURLUseCase(urlRepo, userRepo, analyticsRepo, uaParser)
 	analyticsUseCase := application.NewAnalyticsUseCase(analyticsRepo, urlRepo)
-	telegramUseCase := application.NewTelegramUseCase(db, userRepo)
 
 	// Initialize handlers
-	authHandler := handler.NewAuthHandler(userUseCase, telegramUseCase)
+	authHandler := handler.NewAuthHandler(userUseCase)
 	urlHandler := handler.NewURLHandler(urlUseCase, analyticsUseCase)
 	userHandler := handler.NewUserHandler(userUseCase)
 

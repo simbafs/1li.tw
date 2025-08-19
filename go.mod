@@ -3,8 +3,8 @@ module 1litw
 go 1.24.5
 
 require (
+	github.com/PaulSonOfLars/gotgbot/v2 v2.0.0-rc.33
 	github.com/gin-gonic/gin v1.10.1
-	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/joho/godotenv v1.5.1
 	github.com/simbafs/kama v1.0.1

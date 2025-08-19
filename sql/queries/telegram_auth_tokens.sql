@@ -1,7 +1,7 @@
 -- name: CreateTelegramAuthToken :one
 INSERT INTO telegram_auth_tokens (token, telegram_chat_id, expires_at)
 VALUES (?, ?, ?)
-RETURNING token;
+RETURNING *;
 
 -- name: GetTelegramAuthToken :one
 SELECT token, telegram_chat_id, expires_at

@@ -13,6 +13,7 @@ type Config struct {
 	JWTSecret   string
 	ServerPort  string
 	Environment string
+	Base        string
 }
 
 // LoadConfig loads configuration from environment variables or a .env file.
@@ -26,6 +27,7 @@ func LoadConfig() (*Config, error) {
 		JWTSecret:   getEnv("JWT_SECRET", "a-very-secret-key"),
 		ServerPort:  getEnv("SERVER_PORT", "8080"),
 		Environment: getEnv("ENVIRONMENT", "development"),
+		Base:        getEnv("BASE", "http://localhost:8080"),
 	}, nil
 }
 

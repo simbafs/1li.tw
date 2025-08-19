@@ -14,14 +14,12 @@ import (
 )
 
 type AuthHandler struct {
-	userUseCase     *application.UserUseCase
-	telegramUseCase *application.TelegramUseCase
+	userUseCase *application.UserUseCase
 }
 
-func NewAuthHandler(userUC *application.UserUseCase, telegramUC *application.TelegramUseCase) *AuthHandler {
+func NewAuthHandler(userUC *application.UserUseCase) *AuthHandler {
 	return &AuthHandler{
-		userUseCase:     userUC,
-		telegramUseCase: telegramUC,
+		userUseCase: userUC,
 	}
 }
 
@@ -90,16 +88,9 @@ func (h *AuthHandler) LinkTelegram(c *gin.Context) {
 		return
 	}
 
-	err := h.telegramUseCase.VerifyAndLink(c.Request.Context(), req.Token, user.ID)
+	err := h.userUseCase.LinkTelegram(c.Request.Context(), req.Token, user)
 	if err != nil {
-		switch {
-		case errors.Is(err, application.ErrTokenNotFound):
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		case errors.Is(err, application.ErrTokenExpired):
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to link account"})
-		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to link account"})
 		return
 	}
 

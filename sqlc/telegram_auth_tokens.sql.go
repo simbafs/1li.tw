@@ -13,7 +13,7 @@ import (
 const createTelegramAuthToken = `-- name: CreateTelegramAuthToken :one
 INSERT INTO telegram_auth_tokens (token, telegram_chat_id, expires_at)
 VALUES (?, ?, ?)
-RETURNING token
+RETURNING token, telegram_chat_id, expires_at
 `
 
 type CreateTelegramAuthTokenParams struct {
@@ -22,11 +22,11 @@ type CreateTelegramAuthTokenParams struct {
 	ExpiresAt      time.Time `json:"expires_at"`
 }
 
-func (q *Queries) CreateTelegramAuthToken(ctx context.Context, arg CreateTelegramAuthTokenParams) (string, error) {
+func (q *Queries) CreateTelegramAuthToken(ctx context.Context, arg CreateTelegramAuthTokenParams) (TelegramAuthToken, error) {
 	row := q.db.QueryRowContext(ctx, createTelegramAuthToken, arg.Token, arg.TelegramChatID, arg.ExpiresAt)
-	var token string
-	err := row.Scan(&token)
-	return token, err
+	var i TelegramAuthToken
+	err := row.Scan(&i.Token, &i.TelegramChatID, &i.ExpiresAt)
+	return i, err
 }
 
 const deleteTelegramAuthToken = `-- name: DeleteTelegramAuthToken :exec
