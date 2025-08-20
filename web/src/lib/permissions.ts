@@ -12,15 +12,14 @@ export enum Permission {
 }
 
 export const permissionNames: { [key in Permission]?: string } = {
-	[Permission.PermCreatePrefix]: "Create Custom Prefix",
-	[Permission.PermCreateAny]: "Create for Any User",
-	[Permission.PermDeleteOwn]: "Delete Own Links",
-	[Permission.PermDeleteAny]: "Delete Any Link",
-	[Permission.PermViewOwnStats]: "View Own Stats",
-	[Permission.PermViewAnyStats]: "View Any Stats",
-	[Permission.PermUserManage]: "Manage Users",
-  };
-
+	[Permission.PermCreatePrefix]: 'Create Custom Prefix',
+	[Permission.PermCreateAny]: 'Create for Any User',
+	[Permission.PermDeleteOwn]: 'Delete Own Links',
+	[Permission.PermDeleteAny]: 'Delete Any Link',
+	[Permission.PermViewOwnStats]: 'View Own Stats',
+	[Permission.PermViewAnyStats]: 'View Any Stats',
+	[Permission.PermUserManage]: 'Manage Users',
+}
 
 /**
  * Checks if a user's permission set includes the required permission.
