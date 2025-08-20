@@ -73,7 +73,7 @@ func (uc *URLUseCase) CreateShortURL(ctx context.Context, user *domain.User, ori
 	} else {
 		// Validate custom path
 		if err := uc.validateCustomPath(ctx, user, shortPath); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("invalid custom path: %w", err)
 		}
 	}
 
@@ -213,4 +213,3 @@ func isValidURL(rawURL string) bool {
 	}
 	return u.Scheme == "http" || u.Scheme == "https"
 }
-

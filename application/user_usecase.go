@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"1litw/domain"
@@ -36,7 +37,7 @@ func NewUserUseCase(jwtSecret string, userRepo domain.UserRepository, tgAuthToke
 func (uc *UserUseCase) Register(ctx context.Context, username, password string) (*domain.User, error) {
 	existing, err := uc.userRepo.GetByUsername(ctx, username)
 	if err != nil && !errors.Is(err, domain.ErrNotFound) {
-		return nil, err
+		return nil, fmt.Errorf("failed to check existing user: %w", err)
 	}
 	if existing != nil {
 		return nil, ErrUserExists
@@ -55,7 +56,7 @@ func (uc *UserUseCase) Register(ctx context.Context, username, password string) 
 
 	id, err := uc.userRepo.Create(ctx, user)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 	user.ID = id
 	return user, nil
@@ -64,7 +65,7 @@ func (uc *UserUseCase) Register(ctx context.Context, username, password string) 
 func (uc *UserUseCase) Login(ctx context.Context, username, password string) (string, *domain.User, error) {
 	user, err := uc.userRepo.GetByUsername(ctx, username)
 	if err != nil {
-		return "", nil, err
+		return "", nil, fmt.Errorf("failed to get user by username: %w", err)
 	}
 	if user == nil {
 		return "", nil, ErrUserNotFound
@@ -84,7 +85,7 @@ func (uc *UserUseCase) Login(ctx context.Context, username, password string) (st
 
 	tokenString, err := token.SignedString([]byte(uc.jwtSecret))
 	if err != nil {
-		return "", nil, err
+		return "", nil, fmt.Errorf("failed to sign token: %w", err)
 	}
 
 	return tokenString, user, nil
@@ -98,9 +99,10 @@ func (uc *UserUseCase) GetAnonymousUser(ctx context.Context) (*domain.User, erro
 	user, err := uc.userRepo.GetByUsername(ctx, "anonymous")
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
+			// TODO: consider panic
 			return nil, errors.New("critical: anonymous user not found in database")
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed to get anonymous user: %w", err)
 	}
 	return user, nil
 }
@@ -116,7 +118,7 @@ func (uc *UserUseCase) List(ctx context.Context, operator *domain.User) ([]*doma
 
 	users, err := uc.userRepo.List(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list users: %w", err)
 	}
 
 	for _, user := range users {
@@ -159,7 +161,7 @@ func (uc *UserUseCase) Delete(ctx context.Context, operator *domain.User, target
 func (uc *UserUseCase) PrepareLinkTelegram(ctx context.Context, telegramID int64) (string, error) {
 	token, err := uc.tgAuthTokenRepo.Create(ctx, telegramID)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create Telegram auth token: %w", err)
 	}
 
 	return token.Token, nil

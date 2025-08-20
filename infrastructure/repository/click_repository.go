@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"1litw/domain"
@@ -34,7 +35,7 @@ func (r *clickRepository) Create(ctx context.Context, c *domain.URLClick) (int64
 		IPAddress:    sql.NullString{String: c.IPAddress, Valid: c.IPAddress != ""},
 	})
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to create URL click: %w", err)
 	}
 	return id, nil
 }
@@ -50,7 +51,7 @@ func (r *clickRepository) AggregateByTime(ctx context.Context, shortURLID int64,
 		To:         to,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get click stats by time: %w", err)
 	}
 
 	buckets := make([]domain.TimeBucketCount, len(rows))
@@ -81,7 +82,7 @@ func (r *clickRepository) AggregateByCountry(ctx context.Context, shortURLID int
 		To:         to,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get click stats by country: %w", err)
 	}
 
 	counts := make([]domain.KeyCount, len(rows))
@@ -101,7 +102,7 @@ func (r *clickRepository) AggregateByOS(ctx context.Context, shortURLID int64, f
 		To:         to,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get click stats by OS: %w", err)
 	}
 
 	counts := make([]domain.KeyCount, len(rows))
@@ -121,7 +122,7 @@ func (r *clickRepository) AggregateByBrowser(ctx context.Context, shortURLID int
 		To:         to,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get click stats by browser: %w", err)
 	}
 
 	counts := make([]domain.KeyCount, len(rows))

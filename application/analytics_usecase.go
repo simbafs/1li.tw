@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"1litw/domain"
@@ -36,7 +37,7 @@ func NewAnalyticsUseCase(clickRepo domain.ClickRepository, urlRepo domain.ShortU
 func (a *AnalyticsUseCase) GetOverviewByID(ctx context.Context, user *domain.User, shortURLID int64, from, to time.Time) (*URLStats, error) {
 	shortURL, err := a.urlRepo.GetByID(ctx, shortURLID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get short URL: %w", err)
 	}
 	if shortURL == nil {
 		return nil, ErrShortURLNotFound
@@ -59,27 +60,27 @@ func (a *AnalyticsUseCase) GetOverviewByID(ctx context.Context, user *domain.Use
 
 	total, err := a.clickRepo.CountByShortURLID(ctx, shortURL.ID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to count clicks: %w", err)
 	}
 
 	byTime, err := a.clickRepo.AggregateByTime(ctx, shortURL.ID, from, to)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to aggregate clicks by time: %w", err)
 	}
 
 	byCountry, err := a.clickRepo.AggregateByCountry(ctx, shortURL.ID, from, to)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to aggregate clicks by country: %w", err)
 	}
 
 	byOS, err := a.clickRepo.AggregateByOS(ctx, shortURL.ID, from, to)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to aggregate clicks by OS: %w", err)
 	}
 
 	byBrowser, err := a.clickRepo.AggregateByBrowser(ctx, shortURL.ID, from, to)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to aggregate clicks by browser: %w", err)
 	}
 
 	stats := &URLStats{

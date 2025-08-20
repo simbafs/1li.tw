@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"1litw/domain"
 	"1litw/sqlc"
@@ -31,7 +32,7 @@ func (r *userRepository) Create(ctx context.Context, user *domain.User) (int64, 
 		Permissions:  int64(user.Permissions),
 	})
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to create user: %w", err)
 	}
 	return createdUser.ID, nil
 }
@@ -42,7 +43,7 @@ func (r *userRepository) GetByUsername(ctx context.Context, username string) (*d
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed to get user by username: %w", err)
 	}
 	return &domain.User{
 		ID:             user.ID,
@@ -60,7 +61,7 @@ func (r *userRepository) GetByID(ctx context.Context, id int64) (*domain.User, e
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed to get user by ID: %w", err)
 	}
 	return &domain.User{
 		ID:             user.ID,
@@ -78,7 +79,7 @@ func (r *userRepository) GetByTelegramID(ctx context.Context, telegramID int64) 
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed to get user by Telegram ID: %w", err)
 	}
 	return toDomainUser(user), nil
 }
@@ -86,7 +87,7 @@ func (r *userRepository) GetByTelegramID(ctx context.Context, telegramID int64) 
 func (r *userRepository) List(ctx context.Context) ([]*domain.User, error) {
 	users, err := r.queries.ListUsers(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list users: %w", err)
 	}
 
 	var result []*domain.User

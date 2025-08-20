@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"1litw/presentation/telegram/handler"
@@ -19,7 +20,7 @@ type Bot struct {
 func NewBot(token string, handler *handler.Handler) (*Bot, error) {
 	b, err := gotgbot.NewBot(token, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create bot: %w", err)
 	}
 	return &Bot{
 		b:       b,

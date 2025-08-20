@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"1litw/domain"
@@ -38,7 +39,7 @@ func (t *tgAuthTokenRepository) Create(ctx context.Context, telegramID int64) (*
 		TelegramChatID: telegramID,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create Telegram auth token: %w", err)
 	}
 
 	return toDomainTGAuthToken(authToken), nil
@@ -50,7 +51,7 @@ func (t *tgAuthTokenRepository) Get(ctx context.Context, token string) (*domain.
 		if err == sql.ErrNoRows {
 			return nil, domain.ErrNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed to get Telegram auth token: %w", err)
 	}
 
 	return toDomainTGAuthToken(authToken), nil

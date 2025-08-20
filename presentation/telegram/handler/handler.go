@@ -37,7 +37,10 @@ func sendMessage(b *gotgbot.Bot, ctx *ext.Context, text string, opt *gotgbot.Sen
 		opt.MessageThreadId = ctx.EffectiveMessage.MessageThreadId
 	}
 	m, err := ctx.EffectiveChat.SendMessage(b, text, opt)
-	return m, err
+	if err != nil {
+		return nil, fmt.Errorf("failed to send message: %w", err)
+	}
+	return m, nil
 }
 
 func sender(b *gotgbot.Bot, ctx *ext.Context) func(string, ...any) error {
