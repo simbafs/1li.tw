@@ -5,37 +5,21 @@ import (
 	"embed"
 
 	"1litw/application"
-	"1litw/infrastructure/external"
-	"1litw/infrastructure/repository"
 	"1litw/presentation/gin/handler"
 
 	"github.com/gin-gonic/gin"
 	"github.com/simbafs/kama"
 )
 
-func SetupRouter(db *sql.DB, jwtSecret string, webDist embed.FS) *gin.Engine {
-	// Initialize repositories
-	userRepo := repository.NewUserRepository(db)
-	urlRepo := repository.NewShortURLRepository(db)
-	analyticsRepo := repository.NewClickRepository(db)
-	tgAuthTokenRepo := repository.NewTGAuthTokenRepository(db)
-
-	// Initialize external services
-	uaParser := external.NewUAParserService()
-
-	// Initialize use cases
-	userUseCase := application.NewUserUseCase(jwtSecret, userRepo, tgAuthTokenRepo)
-	urlUseCase := application.NewURLUseCase(urlRepo, userRepo, analyticsRepo, uaParser)
-	analyticsUseCase := application.NewAnalyticsUseCase(analyticsRepo, urlRepo)
-
+func SetupRouter(db *sql.DB, webDist embed.FS, jwtSecret string, userUC *application.UserUseCase, urlUC *application.URLUseCase, analyticsUC *application.AnalyticsUseCase) *gin.Engine {
 	// Initialize handlers
-	authHandler := handler.NewAuthHandler(userUseCase)
-	urlHandler := handler.NewURLHandler(urlUseCase, analyticsUseCase)
-	userHandler := handler.NewUserHandler(userUseCase)
+	authHandler := handler.NewAuthHandler(userUC)
+	urlHandler := handler.NewURLHandler(urlUC, analyticsUC)
+	userHandler := handler.NewUserHandler(userUC)
 
 	// Setup router
 	router := gin.Default()
-	authed := router.Group("/").Use(handler.AuthMiddleware(jwtSecret, userUseCase))
+	authed := router.Group("/").Use(handler.AuthMiddleware(jwtSecret, userUC))
 
 	// API routes
 	// routes about authentication
@@ -48,7 +32,7 @@ func SetupRouter(db *sql.DB, jwtSecret string, webDist embed.FS) *gin.Engine {
 	authed.GET("/api/me", userHandler.GetMe)
 
 	// routes about a short URL
-	router.POST("/api/url", handler.OptionalAuthMiddleware(jwtSecret, userUseCase), urlHandler.CreateShortURL)
+	router.POST("/api/url", handler.OptionalAuthMiddleware(jwtSecret, userUC), urlHandler.CreateShortURL)
 	authed.GET("/api/url", urlHandler.GetMyURLs)
 	authed.DELETE("/api/url/:id", urlHandler.DeleteShortURL)
 	authed.GET("/api/url/:id/stats", urlHandler.GetStats)

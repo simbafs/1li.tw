@@ -9,6 +9,8 @@ import (
 	"1litw/sqlc"
 )
 
+var _ domain.ClickRepository = (*clickRepository)(nil)
+
 type clickRepository struct {
 	db      *sql.DB
 	queries *sqlc.Queries
@@ -22,7 +24,7 @@ func NewClickRepository(db *sql.DB) *clickRepository {
 	}
 }
 
-func (r *clickRepository) Insert(ctx context.Context, c *domain.URLClick) (int64, error) {
+func (r *clickRepository) Create(ctx context.Context, c *domain.URLClick) (int64, error) {
 	id, err := r.queries.CreateURLClick(ctx, sqlc.CreateURLClickParams{
 		ShortURLID:   c.ShortURLID,
 		CountryCode:  sql.NullString{String: c.CountryCode, Valid: c.CountryCode != ""},

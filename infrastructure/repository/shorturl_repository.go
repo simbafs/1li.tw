@@ -9,6 +9,8 @@ import (
 	"1litw/sqlc"
 )
 
+var _ domain.ShortURLRepository = (*shortURLRepository)(nil)
+
 type shortURLRepository struct {
 	db      *sql.DB
 	queries *sqlc.Queries

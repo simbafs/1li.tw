@@ -6,6 +6,8 @@ import (
 	"github.com/ua-parser/uap-go/uaparser"
 )
 
+var _ domain.UAParserService = (*uaParserService)(nil)
+
 // uaParserService implements the domain.UAParserService interface using uap-go.
 type uaParserService struct {
 	parser *uaparser.Parser
@@ -27,4 +29,3 @@ func (s *uaParserService) Parse(userAgent string) *domain.UAParserResult {
 		BrowserName: client.UserAgent.Family,
 	}
 }
-

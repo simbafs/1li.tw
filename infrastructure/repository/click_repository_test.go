@@ -34,7 +34,7 @@ func TestClickRepository(t *testing.T) {
 		OSName:       "Linux",
 		BrowserName:  "Go",
 	}
-	_, err = clickRepo.Insert(ctx, click)
+	_, err = clickRepo.Create(ctx, click)
 	require.NoError(t, err)
 
 	// 2. Test CountByShortURLID

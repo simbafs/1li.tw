@@ -8,12 +8,11 @@ import (
 
 // Config holds all configuration for the application
 type Config struct {
-	DBPath      string
-	BotToken    string
-	JWTSecret   string
-	ServerPort  string
-	Environment string
-	Base        string
+	DBPath     string
+	BotToken   string
+	JWTSecret  string
+	ServerPort string
+	Base       string
 }
 
 // LoadConfig loads configuration from environment variables or a .env file.
@@ -22,12 +21,11 @@ func LoadConfig() (*Config, error) {
 	godotenv.Load()
 
 	return &Config{
-		DBPath:      getEnv("DB_PATH", "data/1li.db"),
-		BotToken:    getEnv("BOT_TOKEN", ""),
-		JWTSecret:   getEnv("JWT_SECRET", "a-very-secret-key"),
-		ServerPort:  getEnv("SERVER_PORT", "8080"),
-		Environment: getEnv("ENVIRONMENT", "development"),
-		Base:        getEnv("BASE", "http://localhost:8080"),
+		DBPath:     getEnv("DB_PATH", "data/1li.db"),
+		BotToken:   getEnv("BOT_TOKEN", ""),
+		JWTSecret:  getEnv("JWT_SECRET", "a-very-secret-key"),
+		ServerPort: getEnv("SERVER_PORT", "8080"),
+		Base:       getEnv("BASE", "http://localhost:8080"),
 	}, nil
 }
 

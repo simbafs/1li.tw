@@ -1,4 +1,4 @@
-package processor
+package external
 
 import (
 	"bytes"

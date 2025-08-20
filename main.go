@@ -9,7 +9,7 @@ import (
 	"1litw/application"
 	"1litw/config"
 	"1litw/domain"
-	"1litw/infrastructure/processor"
+	"1litw/infrastructure/external"
 	"1litw/infrastructure/repository"
 	"1litw/presentation/gin"
 	"1litw/presentation/telegram"
@@ -43,23 +43,29 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	// Setup repositories
+	// Initialize repositories
 	clickRepo := repository.NewClickRepository(db)
+	userRepo := repository.NewUserRepository(db)
+	urlRepo := repository.NewShortURLRepository(db)
+	analyticsRepo := repository.NewClickRepository(db)
+	tgAuthTokenRepo := repository.NewTGAuthTokenRepository(db)
 
-	// Start GeoIP Processor
-	geoIPProcessor := processor.NewGeoIPProcessor(clickRepo)
+	// Initialize external services
+	uaParser := external.NewUAParserService()
+	geoIPProcessor := external.NewGeoIPProcessor(clickRepo)
 	geoIPProcessor.Start()
 
+	// Initialize use cases
+	userUC := application.NewUserUseCase(cfg.JWTSecret, userRepo, tgAuthTokenRepo)
+	urlUC := application.NewURLUseCase(urlRepo, userRepo, analyticsRepo, uaParser)
+	analyticsUC := application.NewAnalyticsUseCase(analyticsRepo, urlRepo)
+
 	// Setup router
-	router := gin.SetupRouter(db, cfg.JWTSecret, webDist)
+	router := gin.SetupRouter(db, webDist, cfg.JWTSecret, userUC, urlUC, analyticsUC)
 
 	// Start Telegram Bot if token is provided
 	if cfg.BotToken != "" {
-		userRepo := repository.NewUserRepository(db)
-		tgAuthTokenRepo := repository.NewTGAuthTokenRepository(db)
-
-		userUseCase := application.NewUserUseCase(cfg.JWTSecret, userRepo, tgAuthTokenRepo)
-		h := handler.New(cfg, userUseCase)
+		h := handler.New(cfg, userUC)
 
 		bot, err := telegram.NewBot(cfg.BotToken, h)
 		if err != nil {

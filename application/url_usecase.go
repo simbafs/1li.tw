@@ -24,7 +24,7 @@ var (
 )
 
 // ReservedPathsPattern defines a regex for paths that cannot be used for custom short URLs.
-var ReservedPathsPattern = regexp.MustCompile(`^/(api|auth|admin|assets|static)/.*|/favicon.ico|/robots.txt$`) 
+var ReservedPathsPattern = regexp.MustCompile(`^/(api|auth|admin|assets|static)/.*|/favicon.ico|/robots.txt$`)
 
 type URLUseCase struct {
 	urlRepo   domain.ShortURLRepository
@@ -196,7 +196,7 @@ func (uc *URLUseCase) RecordClick(ctx context.Context, shortURLID int64, userAge
 		}
 
 		// We use a background context because the original request's context might be cancelled.
-		_, err := uc.clickRepo.Insert(context.Background(), click)
+		_, err := uc.clickRepo.Create(context.Background(), click)
 		if err != nil {
 			// Log the error, but don't block the main application flow.
 			// In a real app, you'd use a structured logger.
@@ -213,3 +213,4 @@ func isValidURL(rawURL string) bool {
 	}
 	return u.Scheme == "http" || u.Scheme == "https"
 }
+

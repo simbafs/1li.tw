@@ -39,7 +39,7 @@ type KeyCount struct {
 
 // ClickRepository defines the interface for accessing click analytics data.
 type ClickRepository interface {
-	Insert(ctx context.Context, c *URLClick) (int64, error)
+	Create(ctx context.Context, c *URLClick) (int64, error)
 	CountByShortURLID(ctx context.Context, shortURLID int64) (int64, error)
 	AggregateByTime(ctx context.Context, shortURLID int64, from, to time.Time) ([]TimeBucketCount, error)
 	AggregateByCountry(ctx context.Context, shortURLID int64, from, to time.Time) ([]KeyCount, error)

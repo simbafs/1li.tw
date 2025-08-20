@@ -21,20 +21,20 @@ var (
 
 type UserUseCase struct {
 	jwtSecret       string
-	repo            domain.UserRepository
+	userRepo        domain.UserRepository
 	tgAuthTokenRepo domain.TGAuthTokenRepository
 }
 
-func NewUserUseCase(jwtSecret string, repo domain.UserRepository, tgAuthTokenRepo domain.TGAuthTokenRepository) *UserUseCase {
+func NewUserUseCase(jwtSecret string, userRepo domain.UserRepository, tgAuthTokenRepo domain.TGAuthTokenRepository) *UserUseCase {
 	return &UserUseCase{
 		jwtSecret:       jwtSecret,
-		repo:            repo,
+		userRepo:        userRepo,
 		tgAuthTokenRepo: tgAuthTokenRepo,
 	}
 }
 
 func (uc *UserUseCase) Register(ctx context.Context, username, password string) (*domain.User, error) {
-	existing, err := uc.repo.GetByUsername(ctx, username)
+	existing, err := uc.userRepo.GetByUsername(ctx, username)
 	if err != nil && !errors.Is(err, domain.ErrNotFound) {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (uc *UserUseCase) Register(ctx context.Context, username, password string) 
 		Permissions:  domain.RoleRegular, // Default role for new users
 	}
 
-	id, err := uc.repo.Create(ctx, user)
+	id, err := uc.userRepo.Create(ctx, user)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (uc *UserUseCase) Register(ctx context.Context, username, password string) 
 }
 
 func (uc *UserUseCase) Login(ctx context.Context, username, password string) (string, *domain.User, error) {
-	user, err := uc.repo.GetByUsername(ctx, username)
+	user, err := uc.userRepo.GetByUsername(ctx, username)
 	if err != nil {
 		return "", nil, err
 	}
@@ -91,11 +91,11 @@ func (uc *UserUseCase) Login(ctx context.Context, username, password string) (st
 }
 
 func (uc *UserUseCase) GetMe(ctx context.Context, userID int64) (*domain.User, error) {
-	return uc.repo.GetByID(ctx, userID)
+	return uc.userRepo.GetByID(ctx, userID)
 }
 
 func (uc *UserUseCase) GetAnonymousUser(ctx context.Context) (*domain.User, error) {
-	user, err := uc.repo.GetByUsername(ctx, "anonymous")
+	user, err := uc.userRepo.GetByUsername(ctx, "anonymous")
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			return nil, errors.New("critical: anonymous user not found in database")
@@ -106,7 +106,7 @@ func (uc *UserUseCase) GetAnonymousUser(ctx context.Context) (*domain.User, erro
 }
 
 func (uc *UserUseCase) GetUserByTelegramID(ctx context.Context, telegramID int64) (*domain.User, error) {
-	return uc.repo.GetByTelegramID(ctx, telegramID)
+	return uc.userRepo.GetByTelegramID(ctx, telegramID)
 }
 
 func (uc *UserUseCase) List(ctx context.Context, operator *domain.User) ([]*domain.User, error) {
@@ -114,7 +114,7 @@ func (uc *UserUseCase) List(ctx context.Context, operator *domain.User) ([]*doma
 		return nil, ErrPermissionDenied
 	}
 
-	users, err := uc.repo.List(ctx)
+	users, err := uc.userRepo.List(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (uc *UserUseCase) UpdatePermissions(ctx context.Context, operator *domain.U
 		return ErrPermissionDenied
 	}
 
-	return uc.repo.UpdatePermissions(ctx, targetID, permissions)
+	return uc.userRepo.UpdatePermissions(ctx, targetID, permissions)
 }
 
 func (uc *UserUseCase) Delete(ctx context.Context, operator *domain.User, targetID int64) error {
@@ -153,7 +153,7 @@ func (uc *UserUseCase) Delete(ctx context.Context, operator *domain.User, target
 		return ErrPermissionDenied
 	}
 
-	return uc.repo.Delete(ctx, targetID)
+	return uc.userRepo.Delete(ctx, targetID)
 }
 
 func (uc *UserUseCase) PrepareLinkTelegram(ctx context.Context, telegramID int64) (string, error) {

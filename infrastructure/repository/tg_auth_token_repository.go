@@ -10,12 +10,12 @@ import (
 	"1litw/sqlc"
 )
 
+var _ domain.TGAuthTokenRepository = (*tgAuthTokenRepository)(nil)
+
 type tgAuthTokenRepository struct {
 	db      *sql.DB
 	queries *sqlc.Queries
 }
-
-var _ domain.TGAuthTokenRepository = (*tgAuthTokenRepository)(nil)
 
 func NewTGAuthTokenRepository(db *sql.DB) *tgAuthTokenRepository {
 	return &tgAuthTokenRepository{

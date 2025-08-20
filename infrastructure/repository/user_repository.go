@@ -9,6 +9,8 @@ import (
 	"1litw/sqlc"
 )
 
+var _ domain.UserRepository = (*userRepository)(nil)
+
 type userRepository struct {
 	db      *sql.DB
 	queries *sqlc.Queries
